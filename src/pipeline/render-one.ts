@@ -2,6 +2,8 @@ import type { ContentBlock, TemplateFamily, RenderOptions, RenderOutput, LayoutB
 import { parseMarkdown } from '../content/parse-markdown'
 import { parseJson } from '../content/parse-json'
 import { applyTemplate } from '../template/engine'
+import { paginateContent } from '../template/paginator'
+import { selectTemplates } from '../template/selector'
 import { computeLayoutBoxes } from '../layout/engine'
 import { renderPageCanvas } from '../renderer/canvas'
 import { renderPageSvg } from '../renderer/svg'
@@ -33,12 +35,16 @@ export async function renderContent(
   family: TemplateFamily,
   options: RenderOptions = {},
 ): Promise<RenderOutput[]> {
-  // Phase 1: single page — use content template only
-  const template = family.content
-  const spec = applyTemplate(blocks, template)
-  const boxes = await computeLayoutBoxes(spec, template.size)
-  const page = await renderBoxes(boxes, template.size, options)
-  return [page]
+  const pages = paginateContent(blocks, family.content)
+  const assignments = selectTemplates(pages, family)
+
+  return Promise.all(
+    assignments.map(async ({ blocks: pageBlocks, template }) => {
+      const spec = applyTemplate(pageBlocks, template)
+      const boxes = await computeLayoutBoxes(spec, template.size)
+      return renderBoxes(boxes, template.size, options)
+    }),
+  )
 }
 
 export async function renderMarkdown(
