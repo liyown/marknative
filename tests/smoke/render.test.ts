@@ -30,7 +30,7 @@ const MARKDOWN = `
 `.trim()
 
 const LONG_MARKDOWN = `
-![封面图](https://images.example.com/cover.png)
+![封面图](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j9WQAAAAASUVORK5CYII=)
 
 # 长内容分页测试
 
