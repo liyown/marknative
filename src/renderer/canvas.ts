@@ -20,6 +20,8 @@ async function preloadImages(boxes: LayoutBox[]): Promise<void> {
   const tasks: Array<Promise<void>> = []
 
   const walk = (box: LayoutBox): void => {
+    if (box.kind === 'image' && box.loadedImage) return
+
     if (box.kind === 'image' && box.src) {
       const promise = cache.get(box.src) ?? preloadImageForCanvas(box.src)
       if (!cache.has(box.src)) cache.set(box.src, promise)
