@@ -1,9 +1,10 @@
 import { test, expect, describe } from 'bun:test'
+import type { ContentBlock } from '../../src/types'
 import { parseJson } from '../../src/content/parse-json'
 
 describe('parseJson', () => {
   test('valid ContentBlock[] passes through', () => {
-    const input = [
+    const input: ContentBlock[] = [
       { type: 'paragraph', spans: [{ text: 'Hello' }] },
       { type: 'divider' },
     ]
@@ -23,7 +24,9 @@ describe('parseJson', () => {
   })
 
   test('heroTitle block passes through', () => {
-    const input = [{ type: 'heroTitle', title: 'My Title', subtitle: 'Sub' }]
+    const input: ContentBlock[] = [
+      { type: 'heroTitle', title: 'My Title', subtitle: 'Sub' },
+    ]
     expect(parseJson(input)).toEqual(input)
   })
 })
