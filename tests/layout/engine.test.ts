@@ -112,6 +112,32 @@ describe('computeLayoutBoxes', () => {
     expect(textBox!.lines).toHaveLength(2)
     expect(textBox!.height).toBe(80)
   })
+
+  test('following siblings flow after capped text height', async () => {
+    const spec: LayoutSpec = {
+      type: 'container',
+      direction: 'column',
+      width: 180,
+      height: 600,
+      children: [
+        {
+          type: 'text',
+          spans: [{ text: 'Alpha Beta Gamma Delta Epsilon Zeta Eta Theta Iota Kappa Lambda' }],
+          font: 'bold 32px sans-serif',
+          lineHeight: 40,
+          color: '#000000',
+          maxLines: 2,
+        },
+        { type: 'rect', width: 180, height: 50, fill: { type: 'color', value: '#ff0000' } },
+      ],
+    }
+
+    const boxes = await computeLayoutBoxes(spec, { width: 180, height: 600 })
+    const rects = boxes.filter(b => b.kind === 'rect')
+
+    expect(rects).toHaveLength(1)
+    expect(rects[0]!.y).toBe(80)
+  })
 })
 
 describe('preloadImageForCanvas', () => {
@@ -126,6 +152,19 @@ describe('preloadImageForCanvas', () => {
 
     expect(image.width).toBe(1)
     expect(image.height).toBe(1)
+  })
+
+  test('loads utf8 svg data URLs with media type parameters', async () => {
+    const dataUrl =
+      'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="3"></svg>'
+
+    const image = (await preloadImageForCanvas(dataUrl)) as {
+      width: number
+      height: number
+    }
+
+    expect(image.width).toBe(4)
+    expect(image.height).toBe(3)
   })
 
   test('throws a clear error when remote fetch returns non-2xx', async () => {

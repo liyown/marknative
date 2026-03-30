@@ -1,13 +1,18 @@
 function decodeDataUrl(src: string): Buffer {
-  const match = src.match(/^data:([^;,]+)?(?:;charset=[^;,]+)?(;base64)?,(.*)$/s)
-  if (!match) {
+  if (!src.startsWith('data:')) {
     throw new Error(`Invalid data URL: ${src.slice(0, 32)}...`)
   }
 
-  const [, , isBase64, data] = match
-  if (data == null) {
+  const commaIndex = src.indexOf(',')
+  if (commaIndex === -1) {
     throw new Error(`Invalid data URL: ${src.slice(0, 32)}...`)
   }
+
+  const meta = src.slice(5, commaIndex)
+  const data = src.slice(commaIndex + 1)
+  const isBase64 = meta
+    .split(';')
+    .some(part => part.trim().toLowerCase() === 'base64')
 
   return isBase64 ? Buffer.from(data, 'base64') : Buffer.from(decodeURIComponent(data))
 }

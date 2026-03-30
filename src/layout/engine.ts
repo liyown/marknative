@@ -120,6 +120,39 @@ function specToTextura(node: LayoutSpecNode): LayoutNode {
   }
 }
 
+function countRenderedLines(spec: Extract<LayoutSpecNode, { type: 'text' }>, width: number): number {
+  const plainText = spansToPlainText(spec.spans)
+  if (!plainText.trim()) return 0
+
+  const prepared = prepareWithSegments(plainText, spec.font)
+  return layoutWithLines(prepared, width, spec.lineHeight).lines.length
+}
+
+function specToTexturaWithMeasuredHeights(
+  node: LayoutSpecNode,
+  computed: ComputedLayout,
+): LayoutNode {
+  const texturaNode = specToTextura(node)
+
+  if (node.type === 'text' && node.maxLines != null) {
+    const lineCount = countRenderedLines(node, computed.width)
+    texturaNode.height = Math.min(lineCount, node.maxLines) * node.lineHeight
+    return texturaNode
+  }
+
+  if (node.type === 'container') {
+    const boxNode = texturaNode as BoxNode
+    boxNode.children = node.children.map((child, index) =>
+      specToTexturaWithMeasuredHeights(
+        assertNoSlotNode(child),
+        computed.children[index]!,
+      ),
+    )
+  }
+
+  return texturaNode
+}
+
 function walkTree(
   spec: LayoutSpecNode,
   computed: ComputedLayout,
@@ -231,6 +264,8 @@ export async function computeLayoutBoxes(
   idCounter = 0
 
   const tree = specToTextura(spec)
-  const computed = computeLayout(tree, { width: size.width, height: size.height })
+  const initialComputed = computeLayout(tree, { width: size.width, height: size.height })
+  const cappedTree = specToTexturaWithMeasuredHeights(spec, initialComputed)
+  const computed = computeLayout(cappedTree, { width: size.width, height: size.height })
   return walkTree(spec, computed, 0, 0)
 }
