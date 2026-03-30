@@ -16,14 +16,15 @@ function clampQuality(value: number | undefined): number {
 }
 
 async function preloadImages(boxes: LayoutBox[]): Promise<void> {
+  const cache = new Map<string, Promise<unknown>>()
   const tasks: Array<Promise<void>> = []
-  const seen = new Set<string>()
 
   const walk = (box: LayoutBox): void => {
-    if (box.kind === 'image' && box.src && box.loadedImage == null && !seen.has(box.src)) {
-      seen.add(box.src)
+    if (box.kind === 'image' && box.src) {
+      const promise = cache.get(box.src) ?? preloadImageForCanvas(box.src)
+      if (!cache.has(box.src)) cache.set(box.src, promise)
       tasks.push(
-        preloadImageForCanvas(box.src).then(image => {
+        promise.then(image => {
           box.loadedImage = image
         }),
       )
