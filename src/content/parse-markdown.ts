@@ -23,7 +23,10 @@ function pushText(spanList: Span[], text?: string, style?: Omit<Span, 'text'>) {
   spanList.push({ text, ...style })
 }
 
-function inlineTokensToSpans(tokens: InlineToken[] | undefined): Span[] {
+function inlineTokensToSpans(
+  tokens: InlineToken[] | undefined,
+  inheritedStyle: Omit<Span, 'text'> = {},
+): Span[] {
   if (!tokens || tokens.length === 0) return []
 
   const spans: Span[] = []
@@ -31,29 +34,39 @@ function inlineTokensToSpans(tokens: InlineToken[] | undefined): Span[] {
   for (const token of tokens) {
     switch (token.type) {
       case 'text':
-        pushText(spans, token.text)
+        if (token.tokens?.length) {
+          spans.push(...inlineTokensToSpans(token.tokens, inheritedStyle))
+        } else {
+          pushText(spans, token.text, inheritedStyle)
+        }
         break
       case 'strong':
-        for (const inner of inlineTokensToSpans(token.tokens)) {
-          spans.push({ ...inner, bold: true })
-        }
+        spans.push(...inlineTokensToSpans(token.tokens, { ...inheritedStyle, bold: true }))
         break
       case 'em':
-        for (const inner of inlineTokensToSpans(token.tokens)) {
-          spans.push({ ...inner, italic: true })
-        }
+        spans.push(
+          ...inlineTokensToSpans(token.tokens, { ...inheritedStyle, italic: true }),
+        )
         break
       case 'codespan':
-        pushText(spans, token.text, { code: true })
+        pushText(spans, token.text, { ...inheritedStyle, code: true })
+        break
+      case 'link':
+        spans.push(
+          ...inlineTokensToSpans(token.tokens, {
+            ...inheritedStyle,
+            link: token.href,
+          }),
+        )
         break
       case 'image':
-        pushText(spans, token.text)
+        pushText(spans, token.text, inheritedStyle)
         break
       default:
         if (token.tokens) {
-          spans.push(...inlineTokensToSpans(token.tokens))
+          spans.push(...inlineTokensToSpans(token.tokens, inheritedStyle))
         } else {
-          pushText(spans, token.text)
+          pushText(spans, token.text, inheritedStyle)
         }
     }
   }
@@ -61,11 +74,13 @@ function inlineTokensToSpans(tokens: InlineToken[] | undefined): Span[] {
   return spans.filter(span => span.text.length > 0)
 }
 
+function spansToPlainText(spans: Span[]) {
+  return spans.map(span => span.text).join('').trim()
+}
+
 function extractListItemText(item: { text?: string; tokens?: InlineToken[] }) {
   const spans = inlineTokensToSpans(item.tokens)
-  if (spans.length > 0) {
-    return spans.map(span => span.text).join('').trim()
-  }
+  if (spans.length > 0) return spansToPlainText(spans)
   return (item.text ?? '').trim()
 }
 
@@ -91,8 +106,9 @@ export function parseMarkdown(markdown: string): ContentBlock[] {
         break
       }
       case 'paragraph': {
-        if (token.tokens?.length === 1 && token.tokens[0].type === 'image') {
-          const image = token.tokens[0]
+        const firstToken = token.tokens?.[0]
+        if (token.tokens?.length === 1 && firstToken?.type === 'image') {
+          const image = firstToken
           blocks.push({
             type: 'image',
             src: image.href ?? '',
@@ -119,7 +135,10 @@ export function parseMarkdown(markdown: string): ContentBlock[] {
         break
       }
       case 'blockquote': {
-        blocks.push({ type: 'quoteCard', text: (token.text ?? '').trim() })
+        blocks.push({
+          type: 'quoteCard',
+          text: spansToPlainText(inlineTokensToSpans(token.tokens)),
+        })
         break
       }
       case 'code': {

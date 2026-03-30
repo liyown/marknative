@@ -34,9 +34,27 @@ describe('parseMarkdown', () => {
     ])
   })
 
+  test('link in paragraph → span with link', () => {
+    expect(parseMarkdown('访问 [官网](https://example.com)')).toEqual([
+      {
+        type: 'paragraph',
+        spans: [
+          { text: '访问 ' },
+          { text: '官网', link: 'https://example.com' },
+        ],
+      },
+    ])
+  })
+
   test('unordered list → bulletList', () => {
     expect(parseMarkdown('- 苹果\n- 香蕉')).toEqual([
       { type: 'bulletList', items: ['苹果', '香蕉'] },
+    ])
+  })
+
+  test('unordered list with inline markdown → normalized items', () => {
+    expect(parseMarkdown('- hello **bold** [link](https://a.com)')).toEqual([
+      { type: 'bulletList', items: ['hello bold link'] },
     ])
   })
 
@@ -49,6 +67,12 @@ describe('parseMarkdown', () => {
   test('blockquote → quoteCard', () => {
     expect(parseMarkdown('> 人生苦短')).toEqual([
       { type: 'quoteCard', text: '人生苦短' },
+    ])
+  })
+
+  test('blockquote with inline markdown → normalized text', () => {
+    expect(parseMarkdown('> hello **bold** [link](https://a.com)')).toEqual([
+      { type: 'quoteCard', text: 'hello bold link' },
     ])
   })
 
