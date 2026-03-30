@@ -105,7 +105,7 @@ function boxToSvg(box: LayoutBox, defs: string[]): string {
         .map(child => boxToSvg(child, defs))
         .join('\n')
 
-      return `<g>${children}</g>`
+      return `<g transform="translate(${x},${y})">${children}</g>`
     }
   }
 }

@@ -137,7 +137,7 @@ describe('renderPageSvg', () => {
 
     const result = await renderPageSvg(boxes, { width: 400, height: 600 })
 
-    expect(result.data).toContain('<g>')
+    expect(result.data).toContain('<g transform="translate(8,12)">')
     expect(result.data).toContain('<image')
     expect(result.data).toContain('href="https://example.com/image.png"')
     expect(result.data).toContain('preserveAspectRatio="xMidYMid meet"')
