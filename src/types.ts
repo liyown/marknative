@@ -70,7 +70,7 @@ export type LayoutSpecNode =
       x?: number
       y?: number
       background?: ResolvedPaint
-      children: LayoutSpecNode[]
+      children: Array<LayoutSpecNode | SlotNode>
     }
   | {
       type: 'text'
@@ -161,7 +161,7 @@ export type LayoutBox = {
 
 export type RenderOptions = {
   renderer?: 'canvas' | 'svg' | 'html'
-  format?: 'png' | 'jpeg'
+  format?: RenderOutput['format']
   quality?: number
 }
 
