@@ -1,10 +1,17 @@
 import { test, expect, describe, beforeAll } from 'bun:test'
 import { renderMarkdown, renderJson } from '../../src'
 import { articleTemplate } from '../../src/templates/content/article'
+import { heroTemplate } from '../../src/templates/cover/hero'
+import { summaryTemplate } from '../../src/templates/ending/summary'
 import type { TemplateFamily } from '../../src/types'
 import { writeFileSync, mkdirSync } from 'node:fs'
 
 const family: TemplateFamily = { content: articleTemplate }
+const multiPageFamily: TemplateFamily = {
+  cover: heroTemplate,
+  content: articleTemplate,
+  ending: summaryTemplate,
+}
 
 const MARKDOWN = `
 # 今日份灵感
@@ -20,6 +27,20 @@ const MARKDOWN = `
 ---
 
 保持微笑，温暖他人，也温暖自己。
+`.trim()
+
+const LONG_MARKDOWN = `
+![封面图](https://images.example.com/cover.png)
+
+# 长内容分页测试
+
+这是一段用于验证多页渲染的长文内容。它会不断重复，直到超过单页的可承载范围。
+
+${Array.from({ length: 24 }, (_, index) => `## 第 ${index + 1} 节
+
+本节内容用于拉长文档长度，并确保分页器会在内容足够多时切换到下一页。
+
+我们希望第一页保留封面图，后续页面继续承载正文，直到最后一页使用 summary 模板收尾。`).join('\n\n')}
 `.trim()
 
 describe('end-to-end render', () => {
@@ -60,5 +81,23 @@ describe('end-to-end render', () => {
     const pages = await renderJson(input, family, { renderer: 'canvas' })
     expect(pages[0]!.format).toBe('png')
     writeFileSync('tests/smoke/output/json-input.png', (pages[0] as { data: Buffer }).data)
+  })
+
+  test('renderMarkdown → multiple pages with template family', async () => {
+    const pages = await renderMarkdown(LONG_MARKDOWN, multiPageFamily, {
+      renderer: 'canvas',
+      format: 'png',
+    })
+
+    expect(pages.length).toBeGreaterThan(1)
+    expect(pages[0]!.format).toBe('png')
+    expect(pages.at(-1)!.format).toBe('png')
+
+    pages.forEach((page, index) => {
+      writeFileSync(
+        `tests/smoke/output/long-content-${String(index + 1).padStart(2, '0')}.png`,
+        (page as { data: Buffer }).data,
+      )
+    })
   })
 })
