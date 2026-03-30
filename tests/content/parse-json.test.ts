@@ -23,6 +23,18 @@ describe('parseJson', () => {
     expect(() => parseJson([{ type: 'paragraph' }])).toThrow()
   })
 
+  test('throws on paragraph spans with invalid element', () => {
+    expect(() =>
+      parseJson([{ type: 'paragraph', spans: [{ text: 1 }] }]),
+    ).toThrow()
+  })
+
+  test('throws on list items containing non-string', () => {
+    expect(() =>
+      parseJson([{ type: 'bulletList', items: ['ok', 1] }]),
+    ).toThrow()
+  })
+
   test('heroTitle block passes through', () => {
     const input: ContentBlock[] = [
       { type: 'heroTitle', title: 'My Title', subtitle: 'Sub' },

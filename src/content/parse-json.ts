@@ -15,12 +15,34 @@ const VALID_TYPES = new Set([
   'heroTitle',
 ])
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object'
+}
+
+function assertStringArray(values: unknown, label: string, index: number, type: string) {
+  if (!Array.isArray(values) || values.some(value => typeof value !== 'string')) {
+    throw new Error(`Block ${index} (${type}) invalid '${label}' array`)
+  }
+}
+
+function assertSpanArray(values: unknown, index: number) {
+  if (!Array.isArray(values)) {
+    throw new Error(`Block ${index} (paragraph) missing 'spans' array`)
+  }
+
+  for (const span of values) {
+    if (!isRecord(span) || typeof span['text'] !== 'string') {
+      throw new Error(`Block ${index} (paragraph) invalid 'spans' array`)
+    }
+  }
+}
+
 function assertBlock(item: unknown, index: number): ContentBlock {
-  if (!item || typeof item !== 'object') {
+  if (!isRecord(item)) {
     throw new Error(`Block at index ${index} is not an object`)
   }
 
-  const block = item as Record<string, unknown>
+  const block = item
 
   if (!block['type'] || typeof block['type'] !== 'string') {
     throw new Error(`Block at index ${index} is missing 'type' field`)
@@ -32,9 +54,7 @@ function assertBlock(item: unknown, index: number): ContentBlock {
 
   switch (block['type']) {
     case 'paragraph':
-      if (!Array.isArray(block['spans'])) {
-        throw new Error(`Block ${index} (paragraph) missing 'spans' array`)
-      }
+      assertSpanArray(block['spans'], index)
       break
     case 'heading':
       if (typeof block['text'] !== 'string') {
@@ -48,9 +68,7 @@ function assertBlock(item: unknown, index: number): ContentBlock {
     case 'orderedList':
     case 'steps':
     case 'tags':
-      if (!Array.isArray(block['items'])) {
-        throw new Error(`Block ${index} (${block['type']}) missing 'items' array`)
-      }
+      assertStringArray(block['items'], 'items', index, block['type'])
       break
     case 'heroTitle':
       if (typeof block['title'] !== 'string') {
@@ -79,7 +97,7 @@ function assertBlock(item: unknown, index: number): ContentBlock {
       break
   }
 
-  return block as unknown as ContentBlock
+  return block as ContentBlock
 }
 
 export function parseJson(raw: unknown): ContentBlock[] {
