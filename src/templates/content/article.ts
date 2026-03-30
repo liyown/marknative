@@ -3,7 +3,9 @@ import { defaultTokens } from '../tokens/default'
 
 export function makeArticleTemplate(fontFamily: string = 'Heiti SC'): Template {
   const t = {
-    ...defaultTokens,
+    colors: { ...defaultTokens.colors },
+    spacing: { ...defaultTokens.spacing },
+    radius: { ...defaultTokens.radius },
     typography: {
       h1:      { font: `bold 52px ${fontFamily}`,  lineHeight: 72 },
       h2:      { font: `bold 38px ${fontFamily}`,  lineHeight: 54 },
