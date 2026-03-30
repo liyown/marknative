@@ -5,7 +5,7 @@ describe('measureTextHeight', () => {
   test('single line text has height ≈ lineHeight', () => {
     const h = measureTextHeight('Hello', 'bold 40px sans-serif', 60, 1000)
     expect(h).toBeGreaterThanOrEqual(55)
-    expect(h).toBeLessThanOrEqual(120)
+    expect(h).toBeLessThan(90)
   })
 
   test('wider text wraps to more lines', () => {
@@ -23,6 +23,9 @@ describe('getTextLines', () => {
   test('returns array of lines', () => {
     const lines = getTextLines('Hello world', 'bold 40px sans-serif', 60, 500)
     expect(lines.length).toBeGreaterThanOrEqual(1)
-    expect(lines[0]?.text).toBeTruthy()
+    const reconstructed = lines.map(line => line.text).join(' ')
+    expect(reconstructed).toContain('Hello')
+    expect(reconstructed).toContain('world')
+    expect(reconstructed.indexOf('Hello')).toBeLessThan(reconstructed.indexOf('world'))
   })
 })

@@ -2,7 +2,15 @@ import { createCanvas } from '@napi-rs/canvas'
 import { layoutWithLines, prepareWithSegments } from '@chenglou/pretext'
 import type { LayoutLine } from '@chenglou/pretext'
 
-if (typeof globalThis.OffscreenCanvas === 'undefined') {
+type OffscreenCanvasLike = {
+  getContext(contextId: '2d'): any
+}
+
+type OffscreenCanvasConstructor = new (width: number, height: number) => OffscreenCanvasLike
+
+const runtimeGlobal = globalThis as typeof globalThis & { OffscreenCanvas?: OffscreenCanvasConstructor }
+
+if (typeof runtimeGlobal.OffscreenCanvas === 'undefined') {
   class CanvasOffscreenCanvas {
     private readonly canvas
 
@@ -15,8 +23,7 @@ if (typeof globalThis.OffscreenCanvas === 'undefined') {
     }
   }
 
-  ;(globalThis as typeof globalThis & { OffscreenCanvas?: typeof CanvasOffscreenCanvas }).OffscreenCanvas =
-    CanvasOffscreenCanvas
+  runtimeGlobal.OffscreenCanvas = CanvasOffscreenCanvas
 }
 
 export function measureTextHeight(
@@ -25,7 +32,7 @@ export function measureTextHeight(
   lineHeight: number,
   maxWidth: number,
 ): number {
-  if (!text.trim()) return 0
+  if (text.length === 0) return 0
 
   const prepared = prepareWithSegments(text, font)
   return layoutWithLines(prepared, maxWidth, lineHeight).height
@@ -37,7 +44,7 @@ export function getTextLines(
   lineHeight: number,
   maxWidth: number,
 ): LayoutLine[] {
-  if (!text.trim()) return []
+  if (text.length === 0) return []
 
   const prepared = prepareWithSegments(text, font)
   return layoutWithLines(prepared, maxWidth, lineHeight).lines
