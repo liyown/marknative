@@ -2,6 +2,15 @@ import { layoutWithLines, prepareWithSegments } from '@chenglou/pretext'
 import type { ContentBlock, DesignTokens, Template } from '../types'
 
 const BUFFER = 0.85
+const DEFAULT_FONT_SIZE = 28
+
+function extractFontSizePx(font: string): number | null {
+  const match = font.match(/(\d+(?:\.\d+)?)px\b/i)
+  if (!match) return null
+
+  const size = Number(match[1])
+  return Number.isFinite(size) ? size : null
+}
 
 function measureText(
   text: string,
@@ -15,11 +24,33 @@ function measureText(
     const prepared = prepareWithSegments(text, font)
     return layoutWithLines(prepared, maxWidth, lineHeight).height
   } catch {
-    const avgCharWidth = Math.max(parseInt(font, 10) || 28, 1)
+    const fontSize = extractFontSizePx(font) ?? DEFAULT_FONT_SIZE
+    const avgCharWidth = Math.max(Math.round(fontSize * 0.58), 1)
     const charsPerLine = Math.max(Math.floor(maxWidth / avgCharWidth), 1)
     const lines = Math.ceil(text.length / charsPerLine)
     return lines * lineHeight
   }
+}
+
+function estimateListHeight(
+  items: string[],
+  prefix: (index: number) => string,
+  availableWidth: number,
+  tokens: DesignTokens,
+): number {
+  return items.reduce((height, item, index) => {
+    const itemText = `${prefix(index)} ${item}`
+    return (
+      height +
+      measureText(
+        itemText,
+        tokens.typography.body.font,
+        tokens.typography.body.lineHeight,
+        availableWidth,
+      ) +
+      tokens.spacing.xs
+    )
+  }, 0)
 }
 
 function estimateBlockHeight(
@@ -64,9 +95,26 @@ function estimateBlockHeight(
       )
     }
     case 'bulletList':
+      return estimateListHeight(
+        block.items,
+        () => '•',
+        availableWidth,
+        tokens,
+      )
     case 'orderedList':
+      return estimateListHeight(
+        block.items,
+        index => `${index + 1}.`,
+        availableWidth,
+        tokens,
+      )
     case 'steps':
-      return block.items.length * (tokens.typography.body.lineHeight + tokens.spacing.xs)
+      return estimateListHeight(
+        block.items,
+        () => '•',
+        availableWidth,
+        tokens,
+      )
     case 'quoteCard':
       return (
         measureText(
@@ -113,6 +161,17 @@ export function paginateContent(
 
   for (const block of blocks) {
     const blockHeight = estimateBlockHeight(block, width, tokens)
+
+    if (blockHeight > threshold) {
+      if (current.length > 0) {
+        pages.push(current)
+        current = []
+        currentHeight = 0
+      }
+
+      pages.push([block])
+      continue
+    }
 
     if (current.length > 0 && currentHeight + blockHeight > threshold) {
       pages.push(current)
