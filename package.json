@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.3",
-    "@napi-rs/canvas": "^0.1.97"
+    "@napi-rs/canvas": "^0.1.97",
+    "marked": "^17.0.5"
   }
 }
