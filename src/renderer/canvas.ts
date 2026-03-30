@@ -17,9 +17,11 @@ function clampQuality(value: number | undefined): number {
 
 async function preloadImages(boxes: LayoutBox[]): Promise<void> {
   const tasks: Array<Promise<void>> = []
+  const seen = new Set<string>()
 
   const walk = (box: LayoutBox): void => {
-    if (box.kind === 'image' && box.src && box.loadedImage == null) {
+    if (box.kind === 'image' && box.src && box.loadedImage == null && !seen.has(box.src)) {
+      seen.add(box.src)
       tasks.push(
         preloadImageForCanvas(box.src).then(image => {
           box.loadedImage = image
@@ -198,7 +200,6 @@ function drawBox(ctx: Ctx, box: LayoutBox): void {
       return
     case 'group': {
       ctx.save()
-      ctx.translate(box.x, box.y)
       const children = [...(box.children ?? [])].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0))
       for (const child of children) {
         drawBox(ctx, child)
