@@ -13,6 +13,12 @@ async function renderBoxes(
   options: RenderOptions,
 ): Promise<RenderOutput> {
   const backend = options.renderer ?? 'canvas'
+  if (
+    (backend === 'svg' || backend === 'html') &&
+    (options.format === 'png' || options.format === 'jpeg')
+  ) {
+    throw new Error(`Cannot use renderer '${backend}' with raster format '${options.format}'`)
+  }
   if (backend === 'svg') return renderPageSvg(boxes, size)
   if (backend === 'html') return renderPageHtml(boxes, size)
   return renderPageCanvas(boxes, size, options)
