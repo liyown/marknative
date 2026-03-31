@@ -33,6 +33,7 @@ export type DesignTokens = {
     primary: string
     accent: string
     border: string
+    codeBg: string
   }
   typography: {
     h1: { font: string; lineHeight: number }
@@ -70,7 +71,7 @@ export type LayoutSpecNode =
       x?: number
       y?: number
       background?: ResolvedPaint
-      children: Array<LayoutSpecNode | SlotNode>
+      children: Array<LayoutSpecNode>
     }
   | {
       type: 'text'
@@ -100,30 +101,14 @@ export type LayoutSpecNode =
 
 export type LayoutSpec = LayoutSpecNode
 
-export type SlotNode = { type: 'slot'; name: string }
-export type TemplateNode = LayoutSpecNode | SlotNode
-
 export type Shadow = { x: number; y: number; blur: number; color: string }
 
-export type RuleContext = {
-  blocks: ContentBlock[]
-  tokens: DesignTokens
-  mutate: (path: string, value: unknown) => void
-}
-
-export type Template = {
-  id: string
+export type RenderConfig = {
+  ds: DesignTokens
   size: { width: number; height: number }
-  tokens: DesignTokens
   contentArea: { x: number; y: number; width: number; height: number }
-  root: TemplateNode
-  rules?: Array<(ctx: RuleContext) => void>
-}
-
-export type TemplateFamily = {
-  cover?: Template
-  content: Template
-  ending?: Template
+  background?: ResolvedPaint
+  blockGap?: number
 }
 
 // ─── Layout Box ───────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import { init, computeLayout } from 'textura'
 import type { BoxNode, TextNode, LayoutNode, ComputedLayout } from 'textura'
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext'
-import type { LayoutSpec, LayoutSpecNode, LayoutBox, TextLine, SlotNode } from '../types'
+import type { LayoutSpec, LayoutSpecNode, LayoutBox, TextLine } from '../types'
 import { spansToPlainText } from './measure-text'
 
 let initialized = false
@@ -10,18 +10,6 @@ let idCounter = 0
 function nextId(): string {
   idCounter += 1
   return `box-${idCounter}`
-}
-
-function isSlotNode(node: LayoutSpecNode | SlotNode): node is SlotNode {
-  return node.type === 'slot'
-}
-
-function assertNoSlotNode(node: LayoutSpecNode | SlotNode): LayoutSpecNode {
-  if (isSlotNode(node)) {
-    throw new Error('Layout engine received unresolved slot node')
-  }
-
-  return node
 }
 
 export async function initLayoutEngine(): Promise<void> {
@@ -84,7 +72,7 @@ function specToTextura(node: LayoutSpecNode): LayoutNode {
             }
           : {}),
         overflow: 'hidden',
-        children: node.children.map(child => specToTextura(assertNoSlotNode(child))),
+        children: node.children.map(child => specToTextura(child)),
       }
       return box
     }
@@ -144,7 +132,7 @@ function specToTexturaWithMeasuredHeights(
     const boxNode = texturaNode as BoxNode
     boxNode.children = node.children.map((child, index) =>
       specToTexturaWithMeasuredHeights(
-        assertNoSlotNode(child),
+        child,
         computed.children[index]!,
       ),
     )
@@ -178,7 +166,7 @@ function walkTree(
       }
 
       for (let index = 0; index < spec.children.length; index += 1) {
-        const child = assertNoSlotNode(spec.children[index]!)
+        const child = spec.children[index]!
         const childComputed = computed.children[index]
         if (!childComputed) continue
         boxes.push(...walkTree(child, childComputed, absX, absY))

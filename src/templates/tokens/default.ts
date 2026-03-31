@@ -11,6 +11,7 @@ export const defaultTokens: DesignTokens = {
     primary: '#ef4444',
     accent:  '#f97316',
     border:  '#e5e7eb',
+    codeBg:  '#f5f5f5',
   },
   typography: {
     h1:      { font: `bold 52px ${FONT}`,  lineHeight: 72 },
