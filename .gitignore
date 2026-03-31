@@ -37,3 +37,4 @@ _.log
 smoke-output.png
 out-*.png
 .worktrees
+tests/smoke/output/
