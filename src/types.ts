@@ -126,6 +126,14 @@ export type TemplateFamily = {
   ending?: Template
 }
 
+export type RenderConfig = {
+  ds: DesignTokens
+  size: { width: number; height: number }
+  contentArea: { x: number; y: number; width: number; height: number }
+  background?: ResolvedPaint
+  blockGap?: number
+}
+
 // ─── Layout Box ───────────────────────────────────────────────────────────
 
 export type TextLine = {
