@@ -8,7 +8,24 @@ import { renderPageHtml } from '../renderer/html'
 import { measureBlocks } from './measure'
 import { paginateByHeights } from './paginate'
 import { blockToNodes } from './block-to-nodes'
-import { validateRenderOptions } from './render-one'
+function validateRenderOptions(
+  options: RenderOptions,
+): { backend: NonNullable<RenderOptions['renderer']>; format: RenderOutput['format'] } {
+  const backend = options.renderer ?? 'canvas'
+  const format = options.format ?? (backend === 'canvas' ? 'png' : backend)
+
+  if (backend === 'svg' && format !== 'svg') {
+    throw new Error(`Cannot use renderer 'svg' with format '${format}'`)
+  }
+  if (backend === 'html' && format !== 'html') {
+    throw new Error(`Cannot use renderer 'html' with format '${format}'`)
+  }
+  if (backend === 'canvas' && (format === 'svg' || format === 'html')) {
+    throw new Error(`Cannot use renderer 'canvas' with vector format '${format}'`)
+  }
+
+  return { backend, format }
+}
 
 function blocksToSpec(blocks: ContentBlock[], config: RenderConfig): LayoutSpecNode {
   const { ds, size, contentArea } = config
