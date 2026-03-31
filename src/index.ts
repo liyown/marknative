@@ -1,19 +1,27 @@
-// Phase 1: paginateContent / selectTemplates 尚未创建，注释保留到 Phase 2 解注释
+// New direct rendering API
+export { renderDoc, renderDocFromBlocks, renderDocFromJson } from './pipeline/render-doc'
+
+// Legacy rendering API (for backward compatibility)
 export { renderMarkdown, renderContent, renderJson } from './pipeline/render-one'
+
+// Content parsers (still useful standalone)
 export { parseMarkdown } from './content/parse-markdown'
 export { parseJson } from './content/parse-json'
-export { applyTemplate } from './template/engine'
+
+// Low-level building blocks
+export { blockToNodes } from './pipeline/block-to-nodes'
+export { measureBlocks } from './pipeline/measure'
+export { paginateByHeights } from './pipeline/paginate'
 export { computeLayoutBoxes, initLayoutEngine } from './layout/engine'
 export { registerFont } from './setup'
 export { defaultTokens, makeTokens } from './templates/tokens/default'
-export { paginateContent } from './template/paginator'
-export { selectTemplates } from './template/selector'
+
+// Types
 export type {
   ContentBlock,
   Span,
   DesignTokens,
-  Template,
-  TemplateFamily,
+  RenderConfig,
   LayoutSpec,
   LayoutSpecNode,
   LayoutBox,
