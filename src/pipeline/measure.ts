@@ -22,12 +22,11 @@ async function measureBlock(
     children: nodes,
   }
 
+  // Yoga assigns the root node the full available height even when height is 'auto'.
+  // Find natural content height as the max bottom-edge of leaf boxes (text, images, fixed rects).
+  // The root background rect (height === AVAILABLE_HEIGHT) is skipped by the filter.
   const AVAILABLE_HEIGHT = 99999
   const boxes = await computeLayoutBoxes(spec, { width: contentWidth, height: AVAILABLE_HEIGHT })
-
-  // Yoga stretches auto-height containers to fill the parent (AVAILABLE_HEIGHT).
-  // Compute natural height as the max bottom edge of non-fill boxes (text, images, fixed rects).
-  // Boxes with height === AVAILABLE_HEIGHT are containers that stretched to fill — skip them.
   let maxBottom = 0
   for (const box of boxes) {
     if (box.height === AVAILABLE_HEIGHT) continue

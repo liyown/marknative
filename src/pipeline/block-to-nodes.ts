@@ -7,25 +7,33 @@ export function blockToNodes(
 ): LayoutSpecNode[] {
   switch (block.type) {
     case 'heroTitle': {
-      const nodes: LayoutSpecNode[] = [
+      const titleNode: LayoutSpecNode = {
+        type: 'text',
+        spans: [{ text: block.title }],
+        font: ds.typography.h1.font,
+        lineHeight: ds.typography.h1.lineHeight,
+        color: ds.colors.text,
+      }
+      if (!block.subtitle) return [titleNode]
+      return [
         {
-          type: 'text',
-          spans: [{ text: block.title }],
-          font: ds.typography.h1.font,
-          lineHeight: ds.typography.h1.lineHeight,
-          color: ds.colors.text,
+          type: 'container',
+          direction: 'column',
+          width: 'fill',
+          height: 'hug',
+          gap: ds.spacing.sm,
+          children: [
+            titleNode,
+            {
+              type: 'text',
+              spans: [{ text: block.subtitle }],
+              font: ds.typography.h2.font,
+              lineHeight: ds.typography.h2.lineHeight,
+              color: ds.colors.subtext,
+            },
+          ],
         },
       ]
-      if (block.subtitle) {
-        nodes.push({
-          type: 'text',
-          spans: [{ text: block.subtitle }],
-          font: ds.typography.h2.font,
-          lineHeight: ds.typography.h2.lineHeight,
-          color: ds.colors.subtext,
-        })
-      }
-      return nodes
     }
 
     case 'heading': {
@@ -53,31 +61,58 @@ export function blockToNodes(
       ]
 
     case 'bulletList':
-      return block.items.map(item => ({
-        type: 'text' as const,
-        spans: [{ text: `• ${item}` }],
-        font: ds.typography.body.font,
-        lineHeight: ds.typography.body.lineHeight,
-        color: ds.colors.text,
-      }))
+      return [
+        {
+          type: 'container',
+          direction: 'column',
+          width: 'fill',
+          height: 'hug',
+          gap: ds.spacing.xs,
+          children: block.items.map(item => ({
+            type: 'text' as const,
+            spans: [{ text: `• ${item}` }],
+            font: ds.typography.body.font,
+            lineHeight: ds.typography.body.lineHeight,
+            color: ds.colors.text,
+          })),
+        },
+      ]
 
     case 'orderedList':
-      return block.items.map((item, index) => ({
-        type: 'text' as const,
-        spans: [{ text: `${index + 1}. ${item}` }],
-        font: ds.typography.body.font,
-        lineHeight: ds.typography.body.lineHeight,
-        color: ds.colors.text,
-      }))
+      return [
+        {
+          type: 'container',
+          direction: 'column',
+          width: 'fill',
+          height: 'hug',
+          gap: ds.spacing.xs,
+          children: block.items.map((item, index) => ({
+            type: 'text' as const,
+            spans: [{ text: `${index + 1}. ${item}` }],
+            font: ds.typography.body.font,
+            lineHeight: ds.typography.body.lineHeight,
+            color: ds.colors.text,
+          })),
+        },
+      ]
 
     case 'steps':
-      return block.items.map((item, index) => ({
-        type: 'text' as const,
-        spans: [{ text: `${index + 1}. ${item}` }],
-        font: ds.typography.body.font,
-        lineHeight: ds.typography.body.lineHeight,
-        color: ds.colors.text,
-      }))
+      return [
+        {
+          type: 'container',
+          direction: 'column',
+          width: 'fill',
+          height: 'hug',
+          gap: ds.spacing.xs,
+          children: block.items.map((item, index) => ({
+            type: 'text' as const,
+            spans: [{ text: `${index + 1}. ${item}` }],
+            font: ds.typography.body.font,
+            lineHeight: ds.typography.body.lineHeight,
+            color: ds.colors.text,
+          })),
+        },
+      ]
 
     case 'quoteCard':
       return [
@@ -115,18 +150,27 @@ export function blockToNodes(
     case 'metric':
       return [
         {
-          type: 'text',
-          spans: [{ text: block.value }],
-          font: ds.typography.h1.font,
-          lineHeight: ds.typography.h1.lineHeight,
-          color: ds.colors.primary,
-        },
-        {
-          type: 'text',
-          spans: [{ text: block.label }],
-          font: ds.typography.caption.font,
-          lineHeight: ds.typography.caption.lineHeight,
-          color: ds.colors.subtext,
+          type: 'container',
+          direction: 'column',
+          width: 'fill',
+          height: 'hug',
+          gap: ds.spacing.xs,
+          children: [
+            {
+              type: 'text',
+              spans: [{ text: block.value }],
+              font: ds.typography.h1.font,
+              lineHeight: ds.typography.h1.lineHeight,
+              color: ds.colors.primary,
+            },
+            {
+              type: 'text',
+              spans: [{ text: block.label }],
+              font: ds.typography.caption.font,
+              lineHeight: ds.typography.caption.lineHeight,
+              color: ds.colors.subtext,
+            },
+          ],
         },
       ]
 

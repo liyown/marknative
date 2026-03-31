@@ -32,28 +32,35 @@ describe('blockToNodes', () => {
     expect(nodes[0]).toMatchObject({ type: 'text', spans, font: defaultTokens.typography.body.font })
   })
 
-  test('bulletList → one text node per item prefixed with bullet', () => {
+  test('bulletList → single container with one text child per item', () => {
     const nodes = blockToNodes({ type: 'bulletList', items: ['A', 'B', 'C'] }, defaultTokens, WIDTH)
-    expect(nodes).toHaveLength(3)
-    expect((nodes[0] as { spans: { text: string }[] }).spans[0]!.text).toBe('• A')
-    expect((nodes[1] as { spans: { text: string }[] }).spans[0]!.text).toBe('• B')
-    expect((nodes[2] as { spans: { text: string }[] }).spans[0]!.text).toBe('• C')
+    expect(nodes).toHaveLength(1)
+    expect(nodes[0]!.type).toBe('container')
+    const children = (nodes[0] as { children: { spans: { text: string }[] }[] }).children
+    expect(children).toHaveLength(3)
+    expect(children[0]!.spans[0]!.text).toBe('• A')
+    expect(children[1]!.spans[0]!.text).toBe('• B')
+    expect(children[2]!.spans[0]!.text).toBe('• C')
   })
 
-  test('orderedList → numbered items', () => {
+  test('orderedList → single container with numbered children', () => {
     const nodes = blockToNodes(
       { type: 'orderedList', items: ['First', 'Second'] },
       defaultTokens,
       WIDTH,
     )
-    expect((nodes[0] as { spans: { text: string }[] }).spans[0]!.text).toBe('1. First')
-    expect((nodes[1] as { spans: { text: string }[] }).spans[0]!.text).toBe('2. Second')
+    expect(nodes).toHaveLength(1)
+    const children = (nodes[0] as { children: { spans: { text: string }[] }[] }).children
+    expect(children[0]!.spans[0]!.text).toBe('1. First')
+    expect(children[1]!.spans[0]!.text).toBe('2. Second')
   })
 
-  test('steps → numbered items', () => {
+  test('steps → single container with numbered children', () => {
     const nodes = blockToNodes({ type: 'steps', items: ['Do A', 'Do B'] }, defaultTokens, WIDTH)
-    expect((nodes[0] as { spans: { text: string }[] }).spans[0]!.text).toBe('1. Do A')
-    expect((nodes[1] as { spans: { text: string }[] }).spans[0]!.text).toBe('2. Do B')
+    expect(nodes).toHaveLength(1)
+    const children = (nodes[0] as { children: { spans: { text: string }[] }[] }).children
+    expect(children[0]!.spans[0]!.text).toBe('1. Do A')
+    expect(children[1]!.spans[0]!.text).toBe('2. Do B')
   })
 
   test('quoteCard with author → container with text and author line', () => {
@@ -122,20 +129,22 @@ describe('blockToNodes', () => {
     expect(spans[1]!.text).toBe('#typescript ')
   })
 
-  test('metric → value text (h1 color primary) then label text (caption subtext)', () => {
+  test('metric → single container with value (h1 primary) and label (caption subtext)', () => {
     const nodes = blockToNodes(
       { type: 'metric', label: 'Views', value: '10K' },
       defaultTokens,
       WIDTH,
     )
-    expect(nodes).toHaveLength(2)
-    expect(nodes[0]).toMatchObject({
+    expect(nodes).toHaveLength(1)
+    expect(nodes[0]!.type).toBe('container')
+    const children = (nodes[0] as { children: { type: string; spans: { text: string }[]; font: string; color: string }[] }).children
+    expect(children[0]).toMatchObject({
       type: 'text',
       spans: [{ text: '10K' }],
       font: defaultTokens.typography.h1.font,
       color: defaultTokens.colors.primary,
     })
-    expect(nodes[1]).toMatchObject({
+    expect(children[1]).toMatchObject({
       type: 'text',
       spans: [{ text: 'Views' }],
       font: defaultTokens.typography.caption.font,
@@ -143,18 +152,20 @@ describe('blockToNodes', () => {
     })
   })
 
-  test('heroTitle with subtitle → title (h1) + subtitle (h2 subtext)', () => {
+  test('heroTitle with subtitle → single container with title (h1) + subtitle (h2 subtext)', () => {
     const nodes = blockToNodes(
       { type: 'heroTitle', title: 'Main', subtitle: 'Sub' },
       defaultTokens,
       WIDTH,
     )
-    expect(nodes).toHaveLength(2)
-    expect(nodes[0]).toMatchObject({
+    expect(nodes).toHaveLength(1)
+    expect(nodes[0]!.type).toBe('container')
+    const children = (nodes[0] as { children: { font: string; color: string }[] }).children
+    expect(children[0]).toMatchObject({
       font: defaultTokens.typography.h1.font,
       color: defaultTokens.colors.text,
     })
-    expect(nodes[1]).toMatchObject({
+    expect(children[1]).toMatchObject({
       font: defaultTokens.typography.h2.font,
       color: defaultTokens.colors.subtext,
     })

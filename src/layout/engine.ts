@@ -36,7 +36,6 @@ function specToTextura(node: LayoutSpecNode): LayoutNode {
           node.height === 'fill' || node.height === 'hug'
             ? undefined
             : node.height ?? 'auto',
-        ...(node.width === 'fill' ? { flexGrow: 1 } : {}),
         ...(node.height === 'fill' ? { flexGrow: 1 } : {}),
         gap: node.gap,
         alignItems:
@@ -99,7 +98,6 @@ function specToTextura(node: LayoutSpecNode): LayoutNode {
       const box: BoxNode = {
         width: node.width === 'fill' ? undefined : node.width,
         height: node.height === 'fill' || node.height === 'hug' ? undefined : node.height,
-        ...(node.width === 'fill' ? { flexGrow: 1 } : {}),
         ...(node.height === 'fill' ? { flexGrow: 1 } : {}),
         flexShrink: 0,
       }
