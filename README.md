@@ -153,8 +153,16 @@ Markdown
 仓库里已经有几组真实场景：
 
 - 技术博客：
-  ![](https://oss.liuyaowen.cn/images/20260401004655813.png)
-  ![](https://oss.liuyaowen.cn/images/20260401004749792.png)
+  <table>
+    <tr>
+      <td width="50%">
+        <img src="https://oss.liuyaowen.cn/images/20260401004655813.png" alt="技术博客示例第一页" />
+      </td>
+      <td width="50%">
+        <img src="https://oss.liuyaowen.cn/images/20260401004749792.png" alt="技术博客示例第二页" />
+      </td>
+    </tr>
+  </table>
 
 还有几组长文产物可以直接看：
 
