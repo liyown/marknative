@@ -1,11 +1,10 @@
 {
-  "name": "notecard",
-  "module": "index.ts",
+  "name": "marknative",
+  "module": "src/index.ts",
   "type": "module",
   "scripts": {
     "typecheck": "bunx tsc --noEmit",
-    "test:render": "bun run tests/run-all.ts",
-    "test": "bun run typecheck && bun run test:render"
+    "test": "bun test"
   },
   "devDependencies": {
     "@types/bun": "latest"
@@ -15,8 +14,10 @@
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.3",
-    "@napi-rs/canvas": "^0.1.97",
-    "marked": "^17.0.5",
-    "textura": "^0.2.1"
+    "mdast-util-from-markdown": "^2.0.0",
+    "mdast-util-gfm": "^3.0.0",
+    "micromark": "^4.0.0",
+    "micromark-extension-gfm": "^3.0.0",
+    "skia-canvas": "^2.0.0"
   }
 }

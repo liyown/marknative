@@ -1,31 +1,29 @@
-// New direct rendering API
-export { renderDoc, renderDocFromBlocks, renderDocFromJson } from './pipeline/render-doc'
+export { parseMarkdown } from './parser/parse-markdown'
+export { renderMarkdown } from './render/render-markdown'
+export { defaultTheme } from './theme/default-theme'
 
-// Content parsers (still useful standalone)
-export { parseMarkdown } from './content/parse-markdown'
-export { parseJson } from './content/parse-json'
-
-// Low-level building blocks
-export { blockToNodes } from './pipeline/block-to-nodes'
-export { measureBlocks } from './pipeline/measure'
-export { paginateByHeights } from './pipeline/paginate'
-export { computeLayoutBoxes, initLayoutEngine } from './layout/engine'
-export { registerFont } from './setup'
-export { defaultTokens, makeTokens } from './templates/tokens/default'
-
-// Types
 export type {
-  ContentBlock,
-  Span,
-  DesignTokens,
-  RenderConfig,
-  LayoutSpec,
-  LayoutSpecNode,
-  LayoutBox,
-  TextLine,
-  ResolvedPaint,
-  Shadow,
-  RenderOptions,
-  RenderOutput,
-  IRenderer,
-} from './types'
+  BlockNode,
+  BlockquoteNode,
+  BreakNode,
+  CodeBlockNode,
+  DeleteNode,
+  EmphasisNode,
+  HeadingNode,
+  ImageNode,
+  InlineCodeNode,
+  InlineImageNode,
+  InlineNode,
+  LinkNode,
+  ListItemNode,
+  ListNode,
+  MarkdownDocument,
+  ParagraphNode,
+  StrongNode,
+  TableCellNode,
+  TableNode,
+  TableRowNode,
+  ThematicBreakNode,
+  TextNode,
+} from './document/types'
+export type { RenderMarkdownOptions, RenderPage } from './render/render-markdown'
