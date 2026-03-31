@@ -1,7 +1,8 @@
 import { layoutWithLines, prepareWithSegments } from '@chenglou/pretext'
 import type { ContentBlock, DesignTokens, Template } from '../types'
 
-const BUFFER = 0.85
+const CONTENT_BUFFER = 1
+const ENDING_BUFFER = 1
 const DEFAULT_FONT_SIZE = 28
 
 function extractFontSizePx(font: string): number | null {
@@ -145,15 +146,19 @@ function estimateBlockHeight(
   }
 }
 
-export function paginateContent(
+function thresholdForTemplate(template: Template, buffer: number): number {
+  return template.contentArea.height * buffer
+}
+
+function paginateWithTemplate(
   blocks: ContentBlock[],
-  contentTemplate: Template,
+  template: Template,
+  threshold = thresholdForTemplate(template, CONTENT_BUFFER),
 ): ContentBlock[][] {
   if (blocks.length === 0) return [[]]
 
-  const { width, height } = contentTemplate.contentArea
-  const threshold = height * BUFFER
-  const { tokens } = contentTemplate
+  const { width } = template.contentArea
+  const { tokens } = template
 
   const pages: ContentBlock[][] = []
   let current: ContentBlock[] = []
@@ -189,4 +194,49 @@ export function paginateContent(
   }
 
   return pages
+}
+
+export function paginateContent(
+  blocks: ContentBlock[],
+  contentTemplate: Template,
+  options: {
+    endingTemplate?: Template
+  } = {},
+): ContentBlock[][] {
+  const pages = paginateWithTemplate(blocks, contentTemplate)
+  const endingTemplate = options.endingTemplate
+
+  if (!endingTemplate || pages.length <= 1 || blocks.length <= 1) {
+    return pages
+  }
+
+  const endingThreshold = thresholdForTemplate(endingTemplate, ENDING_BUFFER)
+  const { width } = endingTemplate.contentArea
+  const { tokens } = endingTemplate
+
+  const endingPage: ContentBlock[] = []
+  let endingHeight = 0
+  let splitIndex = blocks.length
+
+  for (let index = blocks.length - 1; index >= 1; index -= 1) {
+    const block = blocks[index]!
+    const blockHeight = estimateBlockHeight(block, width, tokens)
+    const exceedsThreshold =
+      endingPage.length > 0 && endingHeight + blockHeight > endingThreshold
+
+    if (exceedsThreshold) break
+
+    endingPage.unshift(block)
+    endingHeight += blockHeight
+    splitIndex = index
+  }
+
+  if (endingPage.length === 0) {
+    return pages
+  }
+
+  const leadingBlocks = blocks.slice(0, splitIndex)
+  const leadingPages = paginateWithTemplate(leadingBlocks, contentTemplate)
+
+  return [...leadingPages, endingPage]
 }

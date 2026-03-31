@@ -100,11 +100,13 @@ export function resolveSlot(
   blocks: ContentBlock[],
   tokens: Template['tokens'],
 ): LayoutSpecNode[] {
+  const titleBlock = blocks.find(
+    block => block.type === 'heroTitle' || block.type === 'heading',
+  )
+
   switch (name) {
     case 'title': {
-      const block = blocks.find(
-        block => block.type === 'heroTitle' || block.type === 'heading',
-      )
+      const block = titleBlock
       if (!block) return []
 
       const text = block.type === 'heroTitle' ? block.title : block.text
@@ -153,15 +155,17 @@ export function resolveSlot(
       ]
     }
     case 'body': {
-      return blocks
-        .filter(block => block.type === 'paragraph')
-        .map(block => ({
-          type: 'text' as const,
-          spans: block.spans,
-          font: tokens.typography.body.font,
-          lineHeight: tokens.typography.body.lineHeight,
-          color: tokens.colors.text,
-        }))
+      return blocks.flatMap(block => {
+        if (
+          block.type === 'image' ||
+          block.type === 'metric' ||
+          block.type === 'tags'
+        ) {
+          return []
+        }
+
+        return fallbackNodesForBlock(block, tokens)
+      })
     }
     case 'list': {
       const block = blocks.find(

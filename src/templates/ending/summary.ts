@@ -26,7 +26,7 @@ export function makeSummaryTemplate(fontFamily: string = 'Heiti SC'): Template {
       width: 1080,
       height: 1440,
       padding: 72,
-      gap: 32,
+      gap: 24,
       background: { type: 'color', value: t.colors.bg },
       children: [
         {
@@ -37,7 +37,14 @@ export function makeSummaryTemplate(fontFamily: string = 'Heiti SC'): Template {
           color: t.colors.subtext,
           align: 'center',
         },
-        { type: 'slot', name: 'body' },
+        {
+          type: 'container',
+          direction: 'column',
+          width: 'fill',
+          height: 'hug',
+          gap: 4,
+          children: [{ type: 'slot', name: 'body' }],
+        },
         { type: 'slot', name: 'tags' },
       ],
     },

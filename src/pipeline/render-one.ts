@@ -39,16 +39,54 @@ async function renderBoxes(
   return renderPageCanvas(boxes, size, options)
 }
 
+function splitCoverBlocks(
+  blocks: ContentBlock[],
+  family: TemplateFamily,
+): {
+  coverBlocks: ContentBlock[]
+  remainingBlocks: ContentBlock[]
+} {
+  if (!family.cover) {
+    return { coverBlocks: [], remainingBlocks: blocks }
+  }
+
+  const imageIndex = blocks.findIndex(block => block.type === 'image')
+  const heroTitleIndex = blocks.findIndex(block => block.type === 'heroTitle')
+
+  if (imageIndex === -1 || heroTitleIndex === -1) {
+    return { coverBlocks: [], remainingBlocks: blocks }
+  }
+
+  const coverIndexes = new Set([imageIndex, heroTitleIndex])
+  const coverBlocks = blocks.filter((_, index) => coverIndexes.has(index))
+  const remainingBlocks = blocks.filter((_, index) => !coverIndexes.has(index))
+
+  return { coverBlocks, remainingBlocks }
+}
+
 export async function renderContent(
   blocks: ContentBlock[],
   family: TemplateFamily,
   options: RenderOptions = {},
 ): Promise<RenderOutput[]> {
-  const pages = paginateContent(blocks, family.content)
-  const assignments = selectTemplates(pages, family)
+  const { coverBlocks, remainingBlocks } = splitCoverBlocks(blocks, family)
+  const paginatedBlocks = coverBlocks.length > 0 ? remainingBlocks : blocks
+  const pages = paginateContent(paginatedBlocks, family.content, {
+    endingTemplate: family.ending,
+  })
+  const assignments = selectTemplates(
+    pages,
+    coverBlocks.length > 0
+      ? { content: family.content, ending: family.ending }
+      : family,
+  )
+  const allAssignments =
+    coverBlocks.length > 0 && family.cover
+      ? [{ blocks: coverBlocks, template: family.cover }, ...assignments]
+      : assignments
 
   return Promise.all(
-    assignments.map(async ({ blocks: pageBlocks, template }) => {
+    allAssignments.map(async ({ blocks: pageBlocks, template }) => {
       const spec = applyTemplate(pageBlocks, template)
       const boxes = await computeLayoutBoxes(spec, template.size)
       return renderBoxes(boxes, template.size, options)

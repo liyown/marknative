@@ -103,6 +103,15 @@ function roundedRect(ctx: Ctx, x: number, y: number, w: number, h: number, r: nu
   ctx.closePath()
 }
 
+function measureSpanMetrics(ctx: Ctx, text: string): { ascent: number; descent: number; width: number } {
+  const metrics = ctx.measureText(text)
+  const ascent = metrics.actualBoundingBoxAscent || 0
+  const descent = metrics.actualBoundingBoxDescent || 0
+  const width = metrics.width
+
+  return { ascent, descent, width }
+}
+
 function drawTextBox(ctx: Ctx, box: LayoutBox): void {
   if (!box.lines || box.lines.length === 0) return
 
@@ -110,14 +119,22 @@ function drawTextBox(ctx: Ctx, box: LayoutBox): void {
   ctx.beginPath()
   ctx.rect(box.x, box.y, box.width, box.height)
   ctx.clip()
-  ctx.textBaseline = 'top'
+  ctx.textBaseline = 'alphabetic'
 
   for (const line of box.lines) {
+    let maxAscent = 0
+    let maxDescent = 0
     const lineWidth = line.spans.reduce((max, span) => {
       ctx.font = span.font
-      const spanWidth = ctx.measureText(span.text).width
-      return Math.max(max, span.x + spanWidth)
+      const metrics = measureSpanMetrics(ctx, span.text)
+      maxAscent = Math.max(maxAscent, metrics.ascent)
+      maxDescent = Math.max(maxDescent, metrics.descent)
+      return Math.max(max, span.x + metrics.width)
     }, 0)
+
+    const textHeight = maxAscent + maxDescent
+    const topPadding = Math.max(0, (line.height - textHeight) / 2)
+    const baselineY = box.y + line.y + topPadding + maxAscent
     const alignOffset =
       box.textAlign === 'center'
         ? (box.width - lineWidth) / 2
@@ -128,7 +145,7 @@ function drawTextBox(ctx: Ctx, box: LayoutBox): void {
     for (const span of line.spans) {
       ctx.font = span.font
       ctx.fillStyle = span.color
-      ctx.fillText(span.text, box.x + span.x + alignOffset, box.y + line.y)
+      ctx.fillText(span.text, box.x + span.x + alignOffset, baselineY)
     }
   }
 

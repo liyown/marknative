@@ -1,4 +1,5 @@
 import { test, expect, describe, beforeAll } from 'bun:test'
+import { createCanvas, loadImage } from '@napi-rs/canvas'
 import { renderPageCanvas } from '../../src/renderer/canvas'
 import { computeLayoutBoxes, initLayoutEngine } from '../../src/layout/engine'
 import { preloadImageForCanvas, preloadImageForSvg } from '../../src/layout/preload-images'
@@ -7,6 +8,29 @@ import type { LayoutSpec, LayoutBox } from '../../src/types'
 beforeAll(async () => {
   await initLayoutEngine()
 })
+
+async function firstPaintedRow(png: Buffer): Promise<number> {
+  const image = await loadImage(png)
+  const canvas = createCanvas(image.width, image.height)
+  const ctx = canvas.getContext('2d')
+  ctx.drawImage(image, 0, 0)
+
+  const data = ctx.getImageData(0, 0, image.width, image.height).data
+  for (let y = 0; y < image.height; y += 1) {
+    for (let x = 0; x < image.width; x += 1) {
+      const offset = (y * image.width + x) * 4
+      const r = data[offset]
+      const g = data[offset + 1]
+      const b = data[offset + 2]
+      const a = data[offset + 3]
+      if (!(r === 255 && g === 255 && b === 255 && a === 255)) {
+        return y
+      }
+    }
+  }
+
+  return -1
+}
 
 describe('computeLayoutBoxes', () => {
   test('rect node gets correct absolute position', async () => {
@@ -228,5 +252,32 @@ describe('renderPageCanvas', () => {
     expect(output.format).toBe('png')
     expect(Buffer.isBuffer(output.data)).toBe(true)
     expect((output.data as Buffer).byteLength).toBeGreaterThan(0)
+  })
+
+  test('vertically centers glyphs within the line box to avoid top clipping', async () => {
+    const output = await renderPageCanvas(
+      [
+        {
+          id: 'text',
+          kind: 'text',
+          x: 0,
+          y: 0,
+          width: 320,
+          height: 56,
+          lines: [
+            {
+              y: 0,
+              height: 56,
+              spans: [{ text: '今日金句', font: 'bold 28px sans-serif', color: '#000000', x: 0 }],
+            },
+          ],
+        },
+      ],
+      { width: 320, height: 80 },
+      { format: 'png' },
+    )
+
+    const firstRow = await firstPaintedRow(output.data as Buffer)
+    expect(firstRow).toBeGreaterThan(0)
   })
 })

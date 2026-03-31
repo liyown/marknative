@@ -13,6 +13,19 @@ const multiPageFamily: TemplateFamily = {
   ending: summaryTemplate,
 }
 
+const COVER_IMAGE =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">' +
+      '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+      '<stop offset="0%" stop-color="#102a43"/><stop offset="100%" stop-color="#ef8354"/>' +
+      '</linearGradient></defs>' +
+      '<rect width="1200" height="675" fill="url(#g)"/>' +
+      '<circle cx="920" cy="180" r="140" fill="rgba(255,255,255,0.2)"/>' +
+      '<rect x="80" y="460" width="460" height="88" rx="24" fill="rgba(255,255,255,0.18)"/>' +
+      '</svg>',
+  )
+
 const MARKDOWN = `
 # 今日份灵感
 
@@ -30,7 +43,7 @@ const MARKDOWN = `
 `.trim()
 
 const LONG_MARKDOWN = `
-![封面图](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j9WQAAAAASUVORK5CYII=)
+![封面图](${COVER_IMAGE})
 
 # 长内容分页测试
 
@@ -62,6 +75,7 @@ describe('end-to-end render', () => {
     const svg = (pages[0] as { data: string }).data
     expect(svg).toContain('<svg')
     expect(svg).toContain('今日份灵感')
+    expect(svg).toContain('今日金句')
     writeFileSync('tests/smoke/output/article.svg', svg)
   })
 
@@ -70,6 +84,7 @@ describe('end-to-end render', () => {
     expect(pages[0]!.format).toBe('html')
     const html = (pages[0] as { data: string }).data
     expect(html).toContain('今日份灵感')
+    expect(html).toContain('今日金句')
     writeFileSync('tests/smoke/output/article.html', html)
   })
 

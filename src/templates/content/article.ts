@@ -29,7 +29,6 @@ export function makeArticleTemplate(fontFamily: string = 'Heiti SC'): Template {
       gap: 24,
       background: { type: 'color', value: t.colors.bg },
       children: [
-        { type: 'slot', name: 'title' },
         {
           type: 'container',
           direction: 'column',

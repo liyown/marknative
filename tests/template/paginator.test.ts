@@ -2,6 +2,7 @@ import { test, expect, describe } from 'bun:test'
 import { paginateContent } from '../../src/template/paginator'
 import type { ContentBlock } from '../../src/types'
 import { articleTemplate } from '../../src/templates/content/article'
+import { summaryTemplate } from '../../src/templates/ending/summary'
 
 const makeBlocks = (n: number): ContentBlock[] =>
   Array.from({ length: n }, (_, i) => ({
@@ -75,4 +76,26 @@ describe('paginateContent', () => {
     expect(pages[1]).toEqual([oversized])
     expect(pages.flat()).toEqual(blocks)
   })
+
+  test('ending template repacks the tail to reduce last-page whitespace', () => {
+    const blocks: ContentBlock[] = [
+      { type: 'heroTitle', title: '长内容分页测试' },
+      { type: 'paragraph', spans: [{ text: '这是一段用于验证多页渲染的长文内容。它会不断重复，直到超过单页的可承载范围。' }] },
+      ...Array.from({ length: 24 }, (_, index) => ([
+        { type: 'heading' as const, level: 2 as const, text: `第 ${index + 1} 节` },
+        { type: 'paragraph' as const, spans: [{ text: '本节内容用于拉长文档长度，并确保分页器会在内容足够多时切换到下一页。' }] },
+        { type: 'paragraph' as const, spans: [{ text: '我们希望第一页保留封面图，后续页面继续承载正文，直到最后一页使用 summary 模板收尾。' }] },
+      ])).flat(),
+    ]
+
+    const plainPages = paginateContent(blocks, articleTemplate)
+    const endingAwarePages = paginateContent(blocks, articleTemplate, {
+      endingTemplate: summaryTemplate,
+    })
+
+    expect(plainPages.flat()).toEqual(blocks)
+    expect(endingAwarePages.flat()).toEqual(blocks)
+    expect(endingAwarePages.length).toBeGreaterThanOrEqual(2)
+  })
+
 })

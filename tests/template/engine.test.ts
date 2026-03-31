@@ -21,6 +21,14 @@ const mockTemplate: Template = {
   },
 }
 
+const flowTemplate: Template = {
+  ...mockTemplate,
+  root: {
+    ...mockTemplate.root,
+    children: [{ type: 'slot', name: 'body' }],
+  },
+}
+
 const blocks: ContentBlock[] = [
   { type: 'heroTitle', title: '今日份灵感' },
   { type: 'paragraph', spans: [{ text: '每天进步一点点' }] },
@@ -47,13 +55,66 @@ describe('applyTemplate', () => {
     }
   })
 
-  test('body slot → text nodes from paragraphs', () => {
-    const spec = applyTemplate(blocks, mockTemplate)
+  test('body slot keeps markdown title and paragraph in order', () => {
+    const spec = applyTemplate(blocks, flowTemplate)
     const container = spec as Extract<LayoutSpecNode, { type: 'container' }>
-    const bodyNode = container.children[1]
-    expect(bodyNode?.type).toBe('text')
-    if (bodyNode?.type === 'text') {
-      expect(bodyNode.spans[0]?.text).toBe('每天进步一点点')
+
+    expect(container.children).toHaveLength(2)
+    expect(container.children[0]?.type).toBe('text')
+    expect(container.children[1]?.type).toBe('text')
+
+    if (container.children[0]?.type === 'text') {
+      expect(container.children[0].spans[0]?.text).toBe('今日份灵感')
+      expect(container.children[0].font).toBe(defaultTokens.typography.h1.font)
+    }
+    if (container.children[1]?.type === 'text') {
+      expect(container.children[1].spans[0]?.text).toBe('每天进步一点点')
+    }
+  })
+
+  test('body slot keeps headings in document flow', () => {
+    const spec = applyTemplate(
+      [
+        { type: 'heroTitle', title: '今日份灵感' },
+        { type: 'paragraph', spans: [{ text: '开场正文' }] },
+        { type: 'heading', level: 2, text: '今日金句' },
+        { type: 'paragraph', spans: [{ text: '后续正文' }] },
+      ],
+      flowTemplate,
+    )
+
+    const container = spec as Extract<LayoutSpecNode, { type: 'container' }>
+    expect(container.children).toHaveLength(4)
+    if (container.children[0]?.type === 'text') {
+      expect(container.children[0].spans[0]?.text).toBe('今日份灵感')
+      expect(container.children[0].font).toBe(defaultTokens.typography.h1.font)
+    }
+    if (container.children[2]?.type === 'text') {
+      expect(container.children[2].spans[0]?.text).toBe('今日金句')
+      expect(container.children[2].font).toBe(defaultTokens.typography.h2.font)
+    }
+  })
+
+  test('body slot preserves headings in original order', () => {
+    const spec = applyTemplate(
+      [
+        { type: 'heading', level: 2, text: '第 3 节' },
+        { type: 'paragraph', spans: [{ text: '第一页正文' }] },
+        { type: 'heading', level: 2, text: '第 4 节' },
+      ],
+      flowTemplate,
+    )
+
+    const container = spec as Extract<LayoutSpecNode, { type: 'container' }>
+    expect(container.children).toHaveLength(3)
+    if (container.children[0]?.type === 'text') {
+      expect(container.children[0].spans[0]?.text).toBe('第 3 节')
+    }
+    if (container.children[1]?.type === 'text') {
+      expect(container.children[1].spans[0]?.text).toBe('第一页正文')
+    }
+    if (container.children[2]?.type === 'text') {
+      expect(container.children[2].spans[0]?.text).toBe('第 4 节')
     }
   })
 
