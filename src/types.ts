@@ -33,6 +33,7 @@ export type DesignTokens = {
     primary: string
     accent: string
     border: string
+    codeBg: string
   }
   typography: {
     h1: { font: string; lineHeight: number }

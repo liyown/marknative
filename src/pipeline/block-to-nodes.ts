@@ -160,7 +160,7 @@ export function blockToNodes(
           width: 'fill',
           height: 'hug',
           padding: ds.spacing.md,
-          background: { type: 'color', value: '#f5f5f5' },
+          background: { type: 'color', value: ds.colors.codeBg },
           children: [
             {
               type: 'text',
@@ -183,7 +183,9 @@ export function blockToNodes(
         },
       ]
 
-    default:
-      return []
+    default: {
+      const _exhaustive: never = block
+      throw new Error(`Unhandled ContentBlock type: ${(_exhaustive as { type: string }).type}`)
+    }
   }
 }
