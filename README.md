@@ -153,11 +153,8 @@ Markdown
 仓库里已经有几组真实场景：
 
 - 技术博客：
-  [tests/smoke/articles/technical-blog.test.ts](/Users/liuyaowen/Workspace/javascript/NoteCard/tests/smoke/articles/technical-blog.test.ts)
-- API 文档：
-  [tests/smoke/reference/api-doc.test.ts](/Users/liuyaowen/Workspace/javascript/NoteCard/tests/smoke/reference/api-doc.test.ts)
-- GFM 表格与任务列表：
-  [tests/smoke/gfm/table-heavy.test.ts](/Users/liuyaowen/Workspace/javascript/NoteCard/tests/smoke/gfm/table-heavy.test.ts)
+  ![](https://oss.liuyaowen.cn/images/20260401004655813.png)
+  ![](https://oss.liuyaowen.cn/images/20260401004749792.png)
 
 还有几组长文产物可以直接看：
 
