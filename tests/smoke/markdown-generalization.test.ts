@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { renderMarkdown } from '../../src'
+import { renderMarkdown } from '../../src/pipeline/render-one'
 import { markdownGeneralizationCases } from '../fixtures/markdown-generalization'
 import { mkdirSync, writeFileSync } from 'node:fs'
 

@@ -1,5 +1,5 @@
 import { test, expect, describe, beforeAll } from 'bun:test'
-import { renderMarkdown, renderJson } from '../../src'
+import { renderMarkdown, renderJson } from '../../src/pipeline/render-one'
 import { articleTemplate } from '../../src/templates/content/article'
 import { heroTemplate } from '../../src/templates/cover/hero'
 import { summaryTemplate } from '../../src/templates/ending/summary'

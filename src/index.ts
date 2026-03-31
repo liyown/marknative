@@ -1,9 +1,6 @@
 // New direct rendering API
 export { renderDoc, renderDocFromBlocks, renderDocFromJson } from './pipeline/render-doc'
 
-// Legacy rendering API (for backward compatibility)
-export { renderMarkdown, renderContent, renderJson } from './pipeline/render-one'
-
 // Content parsers (still useful standalone)
 export { parseMarkdown } from './content/parse-markdown'
 export { parseJson } from './content/parse-json'
