@@ -205,11 +205,12 @@ function drawRun(
 
   if (run.styleKind === 'delete') {
     const metrics = context.measureText(run.text)
-    context.strokeStyle = COLORS.text
+    context.strokeStyle = COLORS.mutedText
     context.lineWidth = 1.5
     context.beginPath()
-    context.moveTo(run.x, baseline - line.height * 0.35)
-    context.lineTo(run.x + metrics.width, baseline - line.height * 0.35)
+    const strikeY = baseline - line.height * 0.22
+    context.moveTo(run.x, strikeY)
+    context.lineTo(run.x + metrics.width, strikeY)
     context.stroke()
   }
 }
@@ -252,7 +253,7 @@ function drawListMarker(
       context.fillText(`${item.marker.ordinal}.`, markerX, baseline)
       return
     case 'task':
-      context.fillText(item.marker.checked ? '☑' : '☐', markerX, baseline)
+      drawTaskCheckbox(context, markerX, baseline, theme.typography.body.lineHeight, item.marker.checked)
       return
   }
 }
@@ -389,4 +390,58 @@ function withItalic(font: string): string {
   }
 
   return `italic ${font}`
+}
+
+function drawTaskCheckbox(
+  context: CanvasRenderingContext2D,
+  x: number,
+  baseline: number,
+  lineHeight: number,
+  checked: boolean,
+): void {
+  const size = Math.round(lineHeight * 0.42)
+  const boxX = x
+  const boxY = Math.round(baseline - size * 0.92)
+  const r = 3
+
+  if (checked) {
+    context.fillStyle = '#374151'
+    context.beginPath()
+    context.moveTo(boxX + r, boxY)
+    context.lineTo(boxX + size - r, boxY)
+    context.arcTo(boxX + size, boxY, boxX + size, boxY + r, r)
+    context.lineTo(boxX + size, boxY + size - r)
+    context.arcTo(boxX + size, boxY + size, boxX + size - r, boxY + size, r)
+    context.lineTo(boxX + r, boxY + size)
+    context.arcTo(boxX, boxY + size, boxX, boxY + size - r, r)
+    context.lineTo(boxX, boxY + r)
+    context.arcTo(boxX, boxY, boxX + r, boxY, r)
+    context.closePath()
+    context.fill()
+
+    context.strokeStyle = '#ffffff'
+    context.lineWidth = Math.max(1.5, size * 0.11)
+    context.lineCap = 'round'
+    context.lineJoin = 'round'
+    context.beginPath()
+    context.moveTo(boxX + size * 0.22, boxY + size * 0.52)
+    context.lineTo(boxX + size * 0.44, boxY + size * 0.74)
+    context.lineTo(boxX + size * 0.78, boxY + size * 0.28)
+    context.stroke()
+  } else {
+    context.strokeStyle = '#9ca3af'
+    context.lineWidth = 1.5
+    context.beginPath()
+    context.moveTo(boxX + r, boxY)
+    context.lineTo(boxX + size - r, boxY)
+    context.arcTo(boxX + size, boxY, boxX + size, boxY + r, r)
+    context.lineTo(boxX + size, boxY + size - r)
+    context.arcTo(boxX + size, boxY + size, boxX + size - r, boxY + size, r)
+    context.lineTo(boxX + r, boxY + size)
+    context.arcTo(boxX, boxY + size, boxX, boxY + size - r, r)
+    context.lineTo(boxX, boxY + r)
+    context.arcTo(boxX, boxY, boxX + r, boxY, r)
+    context.closePath()
+    context.stroke()
+  }
 }
