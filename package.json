@@ -1,17 +1,58 @@
 {
   "name": "marknative",
+  "version": "0.1.0",
+  "description": "Native Markdown rendering engine — produces paginated PNG/SVG documents without a browser",
   "license": "MIT",
-  "module": "src/index.ts",
   "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "markdown",
+    "render",
+    "png",
+    "svg",
+    "pdf",
+    "layout",
+    "pagination",
+    "commonmark",
+    "gfm",
+    "headless",
+    "server-side"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/liyown/marknative.git"
+  },
+  "homepage": "https://github.com/liyown/marknative#readme",
+  "bugs": {
+    "url": "https://github.com/liyown/marknative/issues"
+  },
   "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node --format esm --external '@chenglou/pretext' --external 'mdast-util-from-markdown' --external 'mdast-util-gfm' --external 'micromark' --external 'micromark-extension-gfm' --external 'skia-canvas' && bunx tsc -p tsconfig.build.json",
     "typecheck": "bunx tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "prepublishOnly": "bun run typecheck && bun run test && bun run build"
   },
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.3",
@@ -20,5 +61,8 @@
     "micromark": "^4.0.0",
     "micromark-extension-gfm": "^3.0.0",
     "skia-canvas": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

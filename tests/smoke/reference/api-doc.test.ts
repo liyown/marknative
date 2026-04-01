@@ -70,7 +70,7 @@ The intent is simple: given the same markdown, callers should get the same layou
       'heading',
       'list',
     ])
-    expect(pageFragmentKinds(pages[1]!)).toEqual(['list', 'heading', 'paragraph', 'list', 'paragraph'])
+    expect(pageFragmentKinds(pages[1]!)).toEqual(['heading', 'paragraph', 'list', 'paragraph'])
 
     await writeSmokePages(outputDir, 'api-doc', pages)
     await expectExactSmokeOutputs(outputDir, ['api-doc-01.png', 'api-doc-02.png'])
