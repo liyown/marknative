@@ -200,18 +200,25 @@ function layoutList(node: ListNode, context: LayoutContext): LayoutResult<ListFr
 
 function layoutBlockquote(node: BlockquoteNode, context: LayoutContext): LayoutResult<BlockquoteFragment> {
   const padding = context.theme.blocks.quote.padding
+  // The line box has ~32% of lineHeight as dead space above the first visible glyph
+  // (because baseline = line.y + lineHeight * 0.8, and cap top is ~0.72 * fontSize below baseline).
+  // Compensate so the visual top and bottom padding look equal.
+  const lineTopDead = Math.round(context.theme.typography.body.lineHeight * 0.32)
+  const topOffset = Math.max(2, padding - lineTopDead)
   const childContext = {
     ...context,
     x: context.x + padding,
-    y: context.y + padding,
+    y: context.y + topOffset,
     width: Math.max(1, context.width - padding * 2),
   }
-  const { fragments: children, nextY } = layoutBlocks(node.children, childContext)
+  const { fragments: children } = layoutBlocks(node.children, childContext)
+  const lastChild = children.at(-1)
+  const contentBottom = lastChild ? lastChild.box.y + lastChild.box.height : childContext.y
   const box = {
     x: context.x,
     y: context.y,
     width: context.width,
-    height: nextY - context.y + padding,
+    height: contentBottom - context.y + padding,
   }
 
   return {
