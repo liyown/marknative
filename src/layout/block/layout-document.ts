@@ -348,7 +348,7 @@ function layoutTableRow(
         height: 0,
       },
       align: cellAlign,
-      lines: offsetLineBoxes(lines, cellX + cellPadding, context.y + cellPadding),
+      lines,
     })
   })
 
