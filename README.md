@@ -1,182 +1,275 @@
 # marknative
 
-原生 Markdown 渲染引擎。
+**A native Markdown rendering engine that produces paginated PNG/SVG documents — no browser, no Chromium, no DOM.**
 
-`marknative` 的目标是把 Markdown 直接变成可分页文档，而不是先变成 HTML 再交给浏览器截图。它关心的是文档排版、分页和输出稳定性，不是网页渲染流程。
+Most Markdown rendering pipelines go through a browser:
 
-## 它要解决什么问题
+```
+Markdown → HTML → DOM/CSS → browser layout → screenshot
+```
 
-很多 Markdown 方案本质上依赖浏览器：
+`marknative` takes a different path. It parses Markdown directly into a typed document model, runs its own block and inline layout engine, paginates the result into fixed-size pages, and paints each page using a native 2D canvas API.
 
-- Markdown -> HTML
-- HTML -> DOM/CSS
-- 浏览器排版
-- 截图或导出
+The result is deterministic, server-renderable, and completely headless.
 
-但它不适合下面这些需求：
+---
 
-- 需要稳定、可重复的分页结果
-- 需要服务端批量渲染
-- 需要直接输出 PNG / SVG
-- 需要一个原生的 Markdown 排版内核，而不是浏览器工作流
+## Gallery
 
-`marknative` 想做的是另一件事：原生渲染 markdown
+<table>
+  <tr>
+    <td width="25%"><img src="https://oss.liuyaowen.cn/images/full-syntax-01.png" alt="Headings" /></td>
+    <td width="25%"><img src="https://oss.liuyaowen.cn/images/full-syntax-02.png" alt="Inline styles and lists" /></td>
+    <td width="25%"><img src="https://oss.liuyaowen.cn/images/full-syntax-03.png" alt="Ordered lists and task lists" /></td>
+    <td width="25%"><img src="https://oss.liuyaowen.cn/images/full-syntax-04.png" alt="Blockquotes" /></td>
+  </tr>
+  <tr>
+    <td width="25%"><img src="https://oss.liuyaowen.cn/images/full-syntax-05.png" alt="Code blocks" /></td>
+    <td width="25%"><img src="https://oss.liuyaowen.cn/images/full-syntax-06.png" alt="Tables" /></td>
+    <td width="25%"><img src="https://oss.liuyaowen.cn/images/full-syntax-07.png" alt="Tables and thematic breaks" /></td>
+    <td width="25%"><img src="https://oss.liuyaowen.cn/images/api-doc-01.png" alt="API documentation" /></td>
+  </tr>
+</table>
 
-一句话说，它不是在“渲染网页”，而是在“排版文档”。
+---
 
+## Why
 
-## 当前能力
+| Requirement | Browser-based | marknative |
+| --- | :---: | :---: |
+| Runs on the server without a browser | ✗ | ✓ |
+| Deterministic page breaks across runs | ✗ | ✓ |
+| Direct PNG / SVG output | ✗ | ✓ |
+| Batch rendering at scale | slow | fast |
+| Embeddable as a library | heavy | lightweight |
 
-- `CommonMark + GFM` 解析
-- 原生文档模型
-- block / inline 布局
-- 多页分页
-- PNG 输出
+---
 
-当前支持的常见 Markdown 语法：
-
-- 标题
-- 段落
-- 引用
-- 有序 / 无序 / 任务列表
-- 代码块
-- 行内代码
-- strong / emphasis / delete
-- link
-- 图片
-- 分隔线
-
-当前还在继续优化的部分：
-
-- 英文段落断行质量
-- 更自然的中英混排
-- 更成熟的代码块与表格排版
-- 公开 theme API
-
-## 5 分钟上手
-
-安装：
+## Installation
 
 ```bash
 bun add marknative
-```
-
-或：
-
-```bash
+# or
 npm install marknative
 ```
 
-最小用法：
+> **Peer dependency**: `marknative` uses [`skia-canvas`](https://github.com/samizdatco/skia-canvas) as its paint backend. It ships prebuilt native binaries for macOS, Linux, and Windows — no additional setup is needed in most environments.
+
+---
+
+## Quick Start
 
 ```ts
 import { renderMarkdown } from 'marknative'
 
 const pages = await renderMarkdown(`
-# Render API
+# Hello, marknative
 
-The API accepts markdown input and returns a paginated set of rendered pages.
+A native Markdown rendering engine that produces **paginated PNG pages**
+without a browser.
 
-## Overview
-
-- Supports CommonMark + GFM
-- Produces deterministic page output
-- Works without a browser
-
-\`\`\`ts
-export async function renderMarkdown(markdown: string) {
-  return []
-}
-\`\`\`
+- CommonMark + GFM support
+- Deterministic layout and pagination
+- PNG and SVG output
 `)
 
-console.log(pages.length)
-console.log(pages[0].format) // "png"
-console.log(pages[0].data)   // Buffer
+console.log(`Rendered ${pages.length} page(s)`)
+
+for (const [i, page] of pages.entries()) {
+  // page.format === 'png'
+  // page.data   === Buffer
+  await Bun.write(`page-${i + 1}.png`, page.data)
+}
 ```
 
+---
 
 ## API
 
-当前公开 API 很小：
+### `renderMarkdown(markdown, options?)`
 
-- `renderMarkdown(markdown, options?)`
-- `parseMarkdown(markdown)`
-- `defaultTheme`
-
-`renderMarkdown()` 签名：
+Parses, lays out, paginates, and paints a Markdown document. Returns one output entry per page.
 
 ```ts
 function renderMarkdown(
   markdown: string,
   options?: {
-    format?: 'png' | 'svg'
-    painter?: Painter
+    format?: 'png' | 'svg'   // default: 'png'
+    painter?: Painter         // override the paint backend
   },
 ): Promise<RenderPage[]>
 ```
 
-返回值是分页数组：
+**Return type:**
 
-- PNG 页返回 `Buffer`
-- SVG 页返回 `string`
-- 同时附带布局后的页面元数据
-
-## 技术路线
-
-`marknative` 不自己重写 Markdown parser，也不自己造底层 2D 绘图 API。
-
-当前技术栈：
-
-- `micromark`
-- `mdast-util-from-markdown`
-- `micromark-extension-gfm`
-- `mdast-util-gfm`
-- `@chenglou/pretext`
-- `skia-canvas`
-- `TypeScript`
-
-主链路：
-
-```text
-Markdown
--> CommonMark / GFM AST
--> Marknative Document Model
--> Layout
--> Pagination
--> Paint
--> PNG / SVG
+```ts
+type RenderPage =
+  | { format: 'png'; data: Buffer;  page: PaintPage }
+  | { format: 'svg'; data: string;  page: PaintPage }
 ```
 
-## 样本与测试
+Each entry carries both the raw output (`data`) and the fully resolved page layout (`page`) so you can inspect fragment positions without re-rendering.
 
-仓库里已经有几组真实场景：
+---
 
-- 技术博客：
-  <table>
-    <tr>
-      <td width="50%">
-        <img src="https://oss.liuyaowen.cn/images/20260401004655813.png" alt="技术博客示例第一页" />
-      </td>
-      <td width="50%">
-        <img src="https://oss.liuyaowen.cn/images/20260401004749792.png" alt="技术博客示例第二页" />
-      </td>
-    </tr>
-  </table>
+### `parseMarkdown(markdown)`
 
-还有几组长文产物可以直接看：
+Parses Markdown source into `marknative`'s internal document model without running layout or paint. Useful for inspecting document structure or building custom renderers.
 
-- 全中文：`tests/smoke/output/debug/cn-long-*.png`
-- 全英文：`tests/smoke/output/debug/en-long-*.png`
-- 中英混排：`tests/smoke/output/debug/mixed-long-*.png`
+```ts
+function parseMarkdown(markdown: string): MarkdownDocument
+```
 
+---
+
+### `defaultTheme`
+
+The built-in theme object. Page size is 1080 × 1440 px (portrait card ratio). Font sizes, line heights, margins, and block spacing are all defined here.
+
+```ts
+import { defaultTheme } from 'marknative'
+
+console.log(defaultTheme.page)
+// { width: 1080, height: 1440, margin: { top: 80, right: 72, bottom: 80, left: 72 } }
+```
+
+---
+
+## Rendering Pipeline
+
+```
+Markdown source
+  │
+  ▼
+CommonMark + GFM AST          (micromark, mdast-util-from-markdown)
+  │
+  ▼
+MarkdownDocument               internal typed document model
+  │
+  ▼
+BlockLayoutFragment[]          block + inline layout engine
+  │
+  ▼
+Page[]                         paginator — slices fragments into fixed-height pages
+  │
+  ▼
+PNG Buffer / SVG string        skia-canvas paint backend
+```
+
+Each stage is independently testable. The layout engine has no dependency on the paint backend, and the paint backend accepts a plain data structure — it does not re-run layout.
+
+---
+
+## Supported Syntax
+
+### CommonMark
+
+| Element | Support |
+| --- | :---: |
+| Headings (H1–H6) | ✓ |
+| Paragraphs | ✓ |
+| **Bold**, *italic*, ***bold italic*** | ✓ |
+| `Inline code` | ✓ |
+| [Links](https://commonmark.org) | ✓ |
+| Fenced code blocks | ✓ |
+| Blockquotes (nested) | ✓ |
+| Ordered lists | ✓ |
+| Unordered lists (nested) | ✓ |
+| Images (block + inline) | ✓ |
+| Thematic breaks | ✓ |
+| Hard line breaks | ✓ |
+
+### GFM Extensions
+
+| Element | Support |
+| --- | :---: |
+| Tables (with alignment) | ✓ |
+| Task lists | ✓ |
+| ~~Strikethrough~~ | ✓ |
+
+---
+
+## Recipes
+
+### Save all pages as PNG files
+
+```ts
+import { renderMarkdown } from 'marknative'
+import { writeFile } from 'node:fs/promises'
+
+const markdown = await Bun.file('article.md').text()
+const pages = await renderMarkdown(markdown)
+
+await Promise.all(
+  pages.map((page, i) =>
+    writeFile(`out/page-${String(i + 1).padStart(2, '0')}.png`, page.data)
+  )
+)
+```
+
+### Serve rendered pages over HTTP with Bun
+
+```ts
+import { renderMarkdown } from 'marknative'
+
+Bun.serve({
+  routes: {
+    '/render': {
+      async POST(req) {
+        const { markdown } = await req.json()
+        const pages = await renderMarkdown(markdown, { format: 'png' })
+        const first = pages[0]
+
+        if (!first || first.format !== 'png') {
+          return new Response('no output', { status: 500 })
+        }
+
+        return new Response(first.data, {
+          headers: { 'Content-Type': 'image/png' },
+        })
+      },
+    },
+  },
+})
+```
+
+### Export as SVG
+
+```ts
+const pages = await renderMarkdown(markdown, { format: 'svg' })
+
+for (const page of pages) {
+  if (page.format === 'svg') {
+    console.log(page.data) // inline SVG string
+  }
+}
+```
+
+---
+
+## Tech Stack
+
+| Layer | Library |
+| --- | --- |
+| Markdown parsing | [`micromark`](https://github.com/micromark/micromark) + [`mdast-util-from-markdown`](https://github.com/syntax-tree/mdast-util-from-markdown) |
+| GFM extensions | [`micromark-extension-gfm`](https://github.com/micromark/micromark-extension-gfm) + [`mdast-util-gfm`](https://github.com/syntax-tree/mdast-util-gfm) |
+| Text shaping | [`@chenglou/pretext`](https://github.com/chenglou/pretext) |
+| 2D rendering | [`skia-canvas`](https://github.com/samizdatco/skia-canvas) |
+| Language | TypeScript |
+
+---
 
 ## Roadmap
 
-接下来优先做的事情：
+- [ ] Improve paragraph line-breaking quality for English prose
+- [ ] Refine CJK and mixed Chinese-English line-breaking rules
+- [ ] Improve code block and table rendering quality
+- [ ] Expose public theme and page configuration API
+- [ ] Support custom fonts
+- [ ] Complete GFM coverage (footnotes, autolinks)
 
-1. 提升 paragraph line breaking 质量
-2. 继续收中英混排规则
-3. 提升代码块与表格排版质量
-4. 开放 theme 和页面配置
-5. 补齐更多标准 Markdown / GFM 细节
+---
+
+## License
+
+MIT
