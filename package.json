@@ -1,5 +1,6 @@
 {
   "name": "marknative",
+  "license": "MIT",
   "module": "src/index.ts",
   "type": "module",
   "scripts": {
