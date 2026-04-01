@@ -56,14 +56,20 @@ function layoutBlocks(nodes: BlockNode[], context: LayoutContext): { fragments: 
   const fragments: BlockLayoutFragment[] = []
   let cursorY = context.y
 
-  for (const node of nodes) {
-    const laidOut = layoutBlock(node, {
-      ...context,
-      y: cursorY,
-    })
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i]!
+    const nextNode = nodes[i + 1]
+    const laidOut = layoutBlock(node, { ...context, y: cursorY })
 
     fragments.push(laidOut.fragment)
-    cursorY = laidOut.nextY
+
+    // Paragraph immediately followed by a list (e.g. list item label + nested list):
+    // collapse the margin to itemGap to avoid a large visual gap before the first sub-item.
+    if (node.type === 'paragraph' && nextNode?.type === 'list') {
+      cursorY = laidOut.fragment.box.y + laidOut.fragment.box.height + context.theme.blocks.list.itemGap
+    } else {
+      cursorY = laidOut.nextY
+    }
   }
 
   return { fragments, nextY: cursorY }
@@ -143,8 +149,10 @@ function layoutList(node: ListNode, context: LayoutContext): LayoutResult<ListFr
       width: Math.max(1, context.width - context.theme.blocks.list.indent),
       y: cursorY,
     }
-    const { fragments: children, nextY } = layoutBlocks(item.children, childContext)
-    const childBottom = children.at(-1) ? children.at(-1)!.box.y + children.at(-1)!.box.height : cursorY
+    const { fragments: children } = layoutBlocks(item.children, childContext)
+    const contentBottom = children.at(-1) ? children.at(-1)!.box.y + children.at(-1)!.box.height : cursorY
+    // Empty items get at least one line-height so the bullet renders at a valid position.
+    const childBottom = children.length === 0 ? cursorY + context.theme.typography.body.lineHeight : contentBottom
     const itemBox = {
       x: context.x,
       y: cursorY,
