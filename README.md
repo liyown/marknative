@@ -272,4 +272,4 @@ for (const page of pages) {
 
 ## License
 
-MIT
+MIT & Linux Do
