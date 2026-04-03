@@ -1,0 +1,5 @@
+[test]
+# Smoke tests involve skia-canvas rendering, network image fetches, and
+# shiki cold-start (first syntax-highlighting call loads WASM + grammars).
+# 30 s is intentionally generous to stay reliable in CI.
+timeout = 30000

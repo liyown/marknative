@@ -22,16 +22,16 @@ The result is deterministic, server-renderable, and completely headless.
 
 <table>
   <tr>
-    <td width="25%"><img src="https://oss.liuyaowen.cn/images/full-syntax-01.png" alt="Headings" /></td>
-    <td width="25%"><img src="https://oss.liuyaowen.cn/images/full-syntax-02.png" alt="Inline styles and lists" /></td>
-    <td width="25%"><img src="https://oss.liuyaowen.cn/images/full-syntax-03.png" alt="Ordered lists and task lists" /></td>
-    <td width="25%"><img src="https://oss.liuyaowen.cn/images/full-syntax-04.png" alt="Blockquotes" /></td>
+    <td width="50%"><img src="https://oss.liuyaowen.cn/images/full-syntax-01.png" alt="Headings and paragraphs" /></td>
+    <td width="50%"><img src="https://oss.liuyaowen.cn/images/full-syntax-02.png" alt="Inline styles and lists" /></td>
   </tr>
   <tr>
-    <td width="25%"><img src="https://oss.liuyaowen.cn/images/full-syntax-05.png" alt="Code blocks" /></td>
-    <td width="25%"><img src="https://oss.liuyaowen.cn/images/full-syntax-06.png" alt="Tables" /></td>
-    <td width="25%"><img src="https://oss.liuyaowen.cn/images/full-syntax-07.png" alt="Tables and thematic breaks" /></td>
-    <td width="25%"><img src="https://oss.liuyaowen.cn/images/api-doc-01.png" alt="API documentation" /></td>
+    <td width="50%"><img src="https://oss.liuyaowen.cn/images/full-syntax-05.png" alt="Syntax-highlighted code blocks" /></td>
+    <td width="50%"><img src="https://oss.liuyaowen.cn/images/full-syntax-06.png" alt="Tables" /></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="https://oss.liuyaowen.cn/images/full-syntax-03.png" alt="Ordered lists and task lists" /></td>
+    <td width="50%"><img src="https://oss.liuyaowen.cn/images/full-syntax-04.png" alt="Blockquotes" /></td>
   </tr>
 </table>
 
@@ -102,6 +102,9 @@ function renderMarkdown(
     singlePage?: boolean                         // render into one image instead of paginating
     theme?: BuiltInThemeName | ThemeOverrides    // default: defaultTheme
     painter?: Painter                            // override the paint backend
+    codeHighlighting?: {
+      theme?: string                             // Shiki theme — default: 'github-light'
+    }
   },
 ): Promise<RenderPage[]>
 ```
@@ -313,6 +316,27 @@ for (const page of pages) {
 }
 ```
 
+### Syntax highlighting for code blocks
+
+```ts
+// Light theme (default — github-light)
+const pages = await renderMarkdown(markdown)
+
+// Pair a dark marknative theme with a matching Shiki theme
+const pages = await renderMarkdown(markdown, {
+  format: 'png',
+  theme: 'dark',
+  codeHighlighting: { theme: 'github-dark' },
+})
+
+// Nord palette
+const pages = await renderMarkdown(markdown, {
+  codeHighlighting: { theme: 'nord' },
+})
+```
+
+Code blocks without a language tag fall back to plain monochrome text automatically.
+
 ---
 
 ## Tech Stack
@@ -321,6 +345,7 @@ for (const page of pages) {
 | --- | --- |
 | Markdown parsing | [`micromark`](https://github.com/micromark/micromark) + [`mdast-util-from-markdown`](https://github.com/syntax-tree/mdast-util-from-markdown) |
 | GFM extensions | [`micromark-extension-gfm`](https://github.com/micromark/micromark-extension-gfm) + [`mdast-util-gfm`](https://github.com/syntax-tree/mdast-util-gfm) |
+| Syntax highlighting | [`shiki`](https://shiki.style/) |
 | Text shaping | [`@chenglou/pretext`](https://github.com/chenglou/pretext) |
 | 2D rendering | [`skia-canvas`](https://github.com/samizdatco/skia-canvas) |
 | Language | TypeScript |
@@ -331,7 +356,7 @@ for (const page of pages) {
 
 - [ ] Improve paragraph line-breaking quality for English prose
 - [ ] Refine CJK and mixed Chinese-English line-breaking rules
-- [ ] Improve code block and table rendering quality
+- [x] Syntax highlighting for code blocks (Shiki, all themes)
 - [x] Expose public theme and page configuration API
 - [ ] Support custom fonts
 - [ ] Complete GFM coverage (footnotes, autolinks)

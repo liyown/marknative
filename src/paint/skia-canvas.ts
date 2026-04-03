@@ -445,6 +445,12 @@ function fontForRun(
       return withFontStyle(baseTypography.font, 'italic')
     case 'inlineCode':
       return theme.typography.code.font
+    case 'codeToken': {
+      let font = baseTypography.font
+      if (run.fontStyle === 'italic') font = withFontStyle(font, 'italic')
+      if (run.fontWeight === 'bold') font = withFontWeight(font, 'bold')
+      return font
+    }
     case 'link':
     case 'delete':
     case 'inlineImage':
@@ -460,6 +466,8 @@ function colorForRun(run: PaintLineRun, theme: Theme): string {
       return theme.colors.link
     case 'delete':
       return theme.colors.mutedText
+    case 'codeToken':
+      return run.color ?? theme.colors.text
     default:
       return theme.colors.text
   }

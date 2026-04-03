@@ -38,7 +38,7 @@
     "url": "https://github.com/liyown/marknative/issues"
   },
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target node --format esm --external '@chenglou/pretext' --external 'mdast-util-from-markdown' --external 'mdast-util-gfm' --external 'micromark' --external 'micromark-extension-gfm' --external 'skia-canvas' && bunx tsc -p tsconfig.build.json",
+    "build": "bun build src/index.ts --outdir dist --target node --format esm --external '@chenglou/pretext' --external 'mdast-util-from-markdown' --external 'mdast-util-gfm' --external 'micromark' --external 'micromark-extension-gfm' --external 'skia-canvas' --external 'shiki' && bunx tsc -p tsconfig.build.json",
     "typecheck": "bunx tsc --noEmit",
     "test": "bun test",
     "prepublishOnly": "bun run typecheck && bun run test && bun run build",
@@ -66,6 +66,7 @@
     "mdast-util-gfm": "^3.0.0",
     "micromark": "^4.0.0",
     "micromark-extension-gfm": "^3.0.0",
+    "shiki": "^4.0.2",
     "skia-canvas": "^2.0.0"
   },
   "engines": {

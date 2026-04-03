@@ -50,6 +50,9 @@ type RenderMarkdownOptions = {
   singlePage?: boolean
   theme?: BuiltInThemeName | ThemeOverrides
   painter?: Painter
+  codeHighlighting?: {
+    theme?: string  // Shiki theme name — default: 'github-light'
+  }
 }
 ```
 
@@ -89,6 +92,35 @@ await renderMarkdown(md, { theme: 'dracula' })
 // Partial override
 await renderMarkdown(md, { theme: { colors: { background: '#000' } } })
 ```
+
+#### `codeHighlighting`
+
+**Type:** `{ theme?: string }`  
+**Default:** `{ theme: 'github-light' }`
+
+Controls syntax highlighting for fenced code blocks. Highlighting is powered by [Shiki](https://shiki.style/) and runs server-side before layout.
+
+- `theme` — any Shiki-supported theme name (e.g. `'github-dark'`, `'nord'`, `'one-dark-pro'`, `'dracula'`). Defaults to `'github-light'`.
+- Code blocks with an **unknown or missing language tag** fall back to plain monochrome text — no `codeToken` runs are produced.
+
+```ts
+// Default (github-light)
+const pages = await renderMarkdown(md, { format: 'png' })
+
+// Switch to a dark Shiki theme — combine with a dark marknative theme
+const pages = await renderMarkdown(md, {
+  format: 'png',
+  theme: 'dark',
+  codeHighlighting: { theme: 'github-dark' },
+})
+
+// Nord palette
+const pages = await renderMarkdown(md, {
+  codeHighlighting: { theme: 'nord' },
+})
+```
+
+---
 
 #### `painter`
 

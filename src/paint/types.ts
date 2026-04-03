@@ -15,7 +15,10 @@ export type PaintBox = {
 export type PaintLineRun = PaintBox & {
   type: 'text'
   text: string
-  styleKind: 'text' | 'strong' | 'emphasis' | 'inlineCode' | 'link' | 'delete' | 'inlineImage'
+  styleKind: 'text' | 'strong' | 'emphasis' | 'inlineCode' | 'link' | 'delete' | 'inlineImage' | 'codeToken'
+  color?: string
+  fontStyle?: 'italic'
+  fontWeight?: 'bold'
 }
 
 export type PaintLineBox = PaintBox & {

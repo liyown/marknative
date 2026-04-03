@@ -1,4 +1,6 @@
 import { layoutInlineRuns } from '../inline/line-layout'
+import { layoutNextLine, prepareWithSegments } from '@chenglou/pretext'
+import type { LayoutCursor } from '@chenglou/pretext'
 import type {
   BlockNode,
   BlockquoteNode,
@@ -10,7 +12,10 @@ import type {
   ParagraphNode,
   TableNode,
 } from '../../document/types'
-import { defaultTheme, type Theme } from '../../theme/default-theme'
+import { defaultTheme, type Theme, type TypographyStyle } from '../../theme/default-theme'
+import { withFontStyle, withFontWeight } from '../font-utils'
+import type { HighlightedCodeBlock } from '../../highlight/types'
+import type { CodeToken } from '../../highlight/types'
 import type {
   BlockquoteFragment,
   BlockLayoutFragment,
@@ -27,6 +32,7 @@ import type {
   TableRowFragment,
   ThematicBreakFragment,
   LineBox,
+  LineRun,
 } from '../types'
 
 type LayoutContext = {
@@ -34,6 +40,7 @@ type LayoutContext = {
   y: number
   width: number
   theme: Theme
+  highlightedBlocks: Map<CodeBlockNode, HighlightedCodeBlock>
 }
 
 type LayoutResult<T extends BlockLayoutFragment> = {
@@ -41,12 +48,17 @@ type LayoutResult<T extends BlockLayoutFragment> = {
   nextY: number
 }
 
-export function layoutDocument(doc: MarkdownDocument, theme: Theme = defaultTheme): BlockLayoutFragment[] {
+export function layoutDocument(
+  doc: MarkdownDocument,
+  theme: Theme = defaultTheme,
+  highlightedBlocks: Map<CodeBlockNode, HighlightedCodeBlock> = new Map(),
+): BlockLayoutFragment[] {
   const { fragments } = layoutBlocks(doc.children, {
     x: theme.page.margin.left,
     y: theme.page.margin.top,
     width: theme.page.width - theme.page.margin.left - theme.page.margin.right,
     theme,
+    highlightedBlocks,
   })
 
   return fragments
@@ -243,13 +255,20 @@ function layoutCode(node: CodeBlockNode, context: LayoutContext): LayoutResult<C
   const lineHeight = context.theme.typography.code.lineHeight
   const lineWidth = Math.max(1, context.width - padding * 2)
   const codeTheme = withBodyTypography(context.theme, context.theme.typography.code)
+  const highlighted = context.highlightedBlocks.get(node)
   const sourceLines = splitSourceLines(node.value)
   const lines: LineBox[] = []
   const lineSourceMap: number[] = []
   let cursorY = context.y + padding
 
   sourceLines.forEach((sourceLine, sourceLineIndex) => {
-    const laidOut = sourceLine.length > 0 ? layoutInlineRuns([{ type: 'text', value: sourceLine }], lineWidth, codeTheme) : []
+    const hlLine = highlighted?.lines[sourceLineIndex]
+    const laidOut =
+      hlLine !== undefined && hlLine.tokens.length > 0
+        ? layoutHighlightedCodeLine(hlLine.tokens, lineWidth, context.theme.typography.code)
+        : sourceLine.length > 0
+          ? layoutInlineRuns([{ type: 'text', value: sourceLine }], lineWidth, codeTheme)
+          : []
 
     if (laidOut.length > 0) {
       for (const line of laidOut) {
@@ -527,4 +546,161 @@ function emptyLineBox(x: number, y: number, lineHeight: number): LineBox {
     baseline: y,
     runs: [],
   }
+}
+
+// ─── Highlighted code line layout ────────────────────────────────────────────
+//
+// This function replaces layoutInlineRuns for code blocks that have been
+// highlighted by shiki. Key differences from the paragraph inline layout:
+//   1. Leading/trailing spaces are preserved exactly — prepareWithSegments
+//      strips them from its widths array, so we use canvas.measureText instead.
+//   2. Shiki tokens are treated as atomic wrap units; splitting within a token
+//      only happens when it exceeds the full line width.
+
+const CODE_EPSILON = 0.001
+
+type MeasureCtx = { font: string; measureText(text: string): { width: number } }
+
+function getOffscreenContext(): MeasureCtx | null {
+  const g = globalThis as typeof globalThis & {
+    OffscreenCanvas?: new (w: number, h: number) => { getContext(t: '2d'): MeasureCtx | null }
+  }
+  return g.OffscreenCanvas ? (new g.OffscreenCanvas(1, 1).getContext('2d') ?? null) : null
+}
+
+function canvasWidth(ctx: MeasureCtx | null, text: string, font: string): number {
+  if (!ctx) return 0
+  ctx.font = font
+  return ctx.measureText(text).width
+}
+
+function layoutHighlightedCodeLine(
+  tokens: CodeToken[],
+  maxWidth: number,
+  typography: TypographyStyle,
+): LineBox[] {
+  type MutableLine = { y: number; width: number; height: number; runs: LineRun[] }
+
+  const ctx = getOffscreenContext()
+  const lines: MutableLine[] = []
+  let currentY = 0
+  let currentLine: MutableLine = { y: 0, width: 0, height: 0, runs: [] }
+
+  const flushLine = () => {
+    const height = currentLine.height > 0 ? currentLine.height : typography.lineHeight
+    lines.push({ ...currentLine, height })
+    currentY += height
+    currentLine = { y: currentY, width: 0, height: 0, runs: [] }
+  }
+
+  for (const token of tokens) {
+    if (token.text.length === 0) continue
+
+    const font = codeTokenFont(token, typography.font)
+    // Use canvas measurement so leading/trailing spaces are included in width.
+    const fullWidth = canvasWidth(ctx, token.text, font)
+
+    if (fullWidth <= 0) continue
+
+    // Case 1: token fits on the current line (most common)
+    if (currentLine.width + fullWidth <= maxWidth + CODE_EPSILON) {
+      currentLine.runs.push(codeRun(token, token.text, currentLine.width, fullWidth, typography.lineHeight))
+      currentLine.width += fullWidth
+      currentLine.height = typography.lineHeight
+      continue
+    }
+
+    // Token doesn't fit — flush the current line if it has content
+    if (currentLine.runs.length > 0) {
+      flushLine()
+    }
+
+    // Case 2: token fits on a fresh line
+    if (fullWidth <= maxWidth + CODE_EPSILON) {
+      currentLine.runs.push(codeRun(token, token.text, 0, fullWidth, typography.lineHeight))
+      currentLine.width = fullWidth
+      currentLine.height = typography.lineHeight
+      continue
+    }
+
+    // Case 3: token is wider than the full line — split at grapheme boundaries
+    // using pretext (Unicode-safe), then re-measure each chunk with canvas.
+    const prepared = prepareWithSegments(token.text, font)
+    let cursor: LayoutCursor = { segmentIndex: 0, graphemeIndex: 0 }
+
+    while (true) {
+      const remaining = maxWidth - currentLine.width
+      if (remaining <= CODE_EPSILON) {
+        flushLine()
+        continue
+      }
+
+      const chunk = layoutNextLine(prepared, cursor, remaining)
+      if (!chunk || chunk.text.length === 0) break
+
+      // Re-measure with canvas to get accurate width for this chunk.
+      const chunkWidth = canvasWidth(ctx, chunk.text, font)
+
+      if (chunkWidth > remaining + CODE_EPSILON && currentLine.runs.length > 0) {
+        flushLine()
+        continue
+      }
+
+      currentLine.runs.push(codeRun(token, chunk.text, currentLine.width, chunkWidth, typography.lineHeight))
+      currentLine.width += chunkWidth
+      currentLine.height = typography.lineHeight
+      cursor = chunk.end
+
+      if (cursor.segmentIndex < prepared.segments.length) {
+        flushLine()
+      } else {
+        break
+      }
+    }
+  }
+
+  if (currentLine.runs.length > 0) {
+    const height = currentLine.height > 0 ? currentLine.height : typography.lineHeight
+    lines.push({ ...currentLine, height })
+  }
+
+  return lines.map(
+    (line): LineBox => ({
+      type: 'line',
+      x: 0,
+      y: line.y,
+      width: line.width,
+      height: line.height,
+      baseline: line.y + line.height * 0.8,
+      runs: line.runs.map((run) => ({ ...run, height: line.height })),
+    }),
+  )
+}
+
+function codeRun(
+  token: CodeToken,
+  text: string,
+  x: number,
+  width: number,
+  lineHeight: number,
+): LineRun {
+  return {
+    type: 'text',
+    text,
+    x,
+    y: 0,
+    width,
+    height: lineHeight,
+    styleKind: 'codeToken',
+    color: token.color,
+    fontStyle: token.fontStyle,
+    fontWeight: token.fontWeight,
+  }
+}
+
+function codeTokenFont(token: CodeToken, baseFont: string): string {
+  let font = baseFont
+  if (token.fontStyle === 'italic') font = withFontStyle(font, 'italic')
+  if (token.fontWeight === 'bold') font = withFontWeight(font, 'bold')
+  return font
 }

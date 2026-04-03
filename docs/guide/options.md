@@ -4,9 +4,10 @@
 
 ```ts
 const pages = await renderMarkdown(markdown, {
-  format: 'png',       // 'png' | 'svg'
-  singlePage: false,   // render into one image instead of paginating
-  theme: 'dark',       // built-in theme name or ThemeOverrides object
+  format: 'png',                          // 'png' | 'svg'
+  singlePage: false,                      // render into one image instead of paginating
+  theme: 'dark',                          // built-in theme name or ThemeOverrides object
+  codeHighlighting: { theme: 'nord' },    // Shiki theme for fenced code blocks
 })
 ```
 
@@ -92,6 +93,52 @@ const pages = await renderMarkdown(markdown, { theme: myTheme })
 ```
 
 See the [Themes guide](/guide/themes) for the complete reference.
+
+## `codeHighlighting`
+
+**Type:** `{ theme?: string }`  
+**Default:** `{ theme: 'github-light' }`
+
+Enables syntax highlighting for fenced code blocks, powered by [Shiki](https://shiki.style/).
+
+| Sub-option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `theme` | `string` | `'github-light'` | Any Shiki-supported theme name |
+
+Shiki is loaded lazily on first use — there is no extra overhead when no code blocks are present.
+
+**Default (github-light):**
+
+```ts
+const pages = await renderMarkdown(md)
+// codeHighlighting: { theme: 'github-light' } is the implicit default
+```
+
+**Dark theme pairing** — combine a dark marknative theme with a matching Shiki theme:
+
+```ts
+const pages = await renderMarkdown(md, {
+  format: 'png',
+  theme: 'dark',
+  codeHighlighting: { theme: 'github-dark' },
+})
+```
+
+**Popular Shiki theme names:**
+
+| Light | Dark |
+| :--- | :--- |
+| `github-light` | `github-dark` |
+| `min-light` | `one-dark-pro` |
+| `catppuccin-latte` | `nord` |
+| | `dracula` |
+| | `tokyo-night` |
+
+For the full list, see the [Shiki themes reference](https://shiki.style/themes).
+
+**Fallback behaviour:** code blocks without a language tag, or with an unrecognised language, are rendered as plain monochrome text (no highlighting applied).
+
+---
 
 ## `painter`
 

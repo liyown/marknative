@@ -17,7 +17,10 @@ import type {
   TableRowFragment,
   ThematicBreakFragment,
 } from '../layout/types'
+import type { BlockNode, CodeBlockNode, MarkdownDocument } from '../document/types'
 import { layoutDocument } from '../layout/block/layout-document'
+import type { HighlightedCodeBlock } from '../highlight/types'
+import { highlightCodeBlock } from '../highlight/highlight-code'
 import { paginateFragments, singlePageFromFragments } from '../layout/pagination/paginate'
 import { parseMarkdown } from '../parser/parse-markdown'
 import { createSkiaCanvasPainter } from '../paint/skia-canvas'
@@ -58,6 +61,18 @@ export type RenderMarkdownOptions = {
    * - A `ThemeOverrides` object is merged onto `defaultTheme`.
    */
   theme?: ThemeOverrides | BuiltInThemeName
+  /**
+   * Code syntax highlighting options. Requires `shiki` to be installed.
+   * Falls back to plain monochrome rendering when shiki is unavailable or
+   * the language is not supported.
+   */
+  codeHighlighting?: {
+    /**
+     * Shiki theme name (e.g. `'github-light'`, `'github-dark'`, `'nord'`).
+     * @default 'github-light'
+     */
+    theme?: string
+  }
 }
 
 export type RenderPage =
@@ -74,11 +89,15 @@ export type RenderPage =
 
 export async function renderMarkdown(markdown: string, options: RenderMarkdownOptions = {}): Promise<RenderPage[]> {
   const theme = resolveTheme(options.theme)
+  const parsedDoc = parseMarkdown(markdown)
+  const shikiTheme = options.codeHighlighting?.theme ?? 'github-light'
+  const highlightedBlocks = await preHighlightCodeBlocks(parsedDoc, shikiTheme)
+
   const restoreMeasurementSupport = ensureTextMeasurementSupport()
   let paintPages: PaintPage[]
 
   try {
-    const fragments = layoutDocument(parseMarkdown(markdown), theme)
+    const fragments = layoutDocument(parsedDoc, theme, highlightedBlocks)
     const layoutPages = options.singlePage
       ? [singlePageFromFragments(fragments, theme)]
       : paginateFragments(fragments, theme)
@@ -284,6 +303,49 @@ function mapRun(run: LineRun): PaintLineRun {
     height: run.height,
     text: run.text,
     styleKind: run.styleKind,
+    color: run.color,
+    fontStyle: run.fontStyle,
+    fontWeight: run.fontWeight,
+  }
+}
+
+// ─── Code block pre-highlighting ─────────────────────────────────────────────
+
+async function preHighlightCodeBlocks(
+  doc: MarkdownDocument,
+  shikiTheme: string,
+): Promise<Map<CodeBlockNode, HighlightedCodeBlock>> {
+  const nodes = collectCodeBlocks(doc)
+  const results = await Promise.all(
+    nodes.map((node) =>
+      node.lang ? highlightCodeBlock(node.value, node.lang, shikiTheme) : Promise.resolve(null),
+    ),
+  )
+  const map = new Map<CodeBlockNode, HighlightedCodeBlock>()
+  nodes.forEach((node, i) => {
+    const result = results[i]
+    if (result) map.set(node, result)
+  })
+  return map
+}
+
+function collectCodeBlocks(doc: MarkdownDocument): CodeBlockNode[] {
+  const blocks: CodeBlockNode[] = []
+  collectFromNodes(doc.children, blocks)
+  return blocks
+}
+
+function collectFromNodes(nodes: BlockNode[], blocks: CodeBlockNode[]): void {
+  for (const node of nodes) {
+    if (node.type === 'codeBlock') {
+      blocks.push(node)
+    } else if (node.type === 'blockquote') {
+      collectFromNodes(node.children, blocks)
+    } else if (node.type === 'list') {
+      for (const item of node.items) {
+        collectFromNodes(item.children, blocks)
+      }
+    }
   }
 }
 
