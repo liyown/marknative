@@ -1,4 +1,6 @@
-# marknative
+<p align="center">
+  <img src="./logo.png" alt="marknative" width="480" />
+</p>
 
 **A native Markdown rendering engine that produces paginated PNG/SVG documents — no browser, no Chromium, no DOM.**
 

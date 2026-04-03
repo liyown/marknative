@@ -13,10 +13,10 @@ export default defineConfig({
     },
   },
 
-  head: [['link', { rel: 'icon', href: '/marknative/favicon.svg' }]],
+  head: [['link', { rel: 'icon', href: '/marknative/logo.png' }]],
 
   themeConfig: {
-    logo: { svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h10M7 12h6M7 16h8"/></svg>' },
+    logo: '/logo.png',
 
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },

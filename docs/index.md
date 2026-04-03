@@ -5,6 +5,9 @@ hero:
   name: marknative
   text: Markdown → PNG / SVG
   tagline: Native rendering engine. No browser. No Chromium. No DOM. Deterministic, headless, fast.
+  image:
+    src: /logo.png
+    alt: marknative
   actions:
     - theme: brand
       text: Get Started
