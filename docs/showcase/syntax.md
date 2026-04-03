@@ -4,7 +4,7 @@ Every standard Markdown element rendered by marknative. Each section shows the M
 
 ## Headings
 
-All six heading levels — H1 through H6.
+All six heading levels — H1 through H6. H1–H4 render at distinct sizes; H5 and H6 share the H4 style.
 
 :::tabs
 == Markdown

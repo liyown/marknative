@@ -48,22 +48,18 @@ writeFileSync('output.png', page.data)
 
 ## Custom Page Width
 
-Override the default 794 px page width. The layout engine recalculates all block widths and line breaks automatically.
+Override the default 1080 px page width using the `theme` option. The layout engine recalculates all block widths and line breaks automatically.
 
 :::tabs
 == Code
 ```ts
-import { renderMarkdown, defaultTheme } from 'marknative'
-import { createSkiaCanvasPainter } from 'marknative/paint'
+import { renderMarkdown, mergeTheme, defaultTheme } from 'marknative'
 
-const theme = {
-  ...defaultTheme,
-  page: { ...defaultTheme.page, width: 480 },
-}
-
-const pages = await renderMarkdown(document, {
-  painter: createSkiaCanvasPainter(theme),
+const theme = mergeTheme(defaultTheme, {
+  page: { width: 480 },
 })
+
+const pages = await renderMarkdown(document, { theme })
 ```
 == Rendered
 ![Custom page width output](/examples/features/custom-width.png)
@@ -76,22 +72,54 @@ Change the page height to fit more content per page — useful for tall card or 
 :::tabs
 == Code
 ```ts
-import { renderMarkdown, defaultTheme } from 'marknative'
-import { createSkiaCanvasPainter } from 'marknative/paint'
+import { renderMarkdown, mergeTheme, defaultTheme } from 'marknative'
 
-const theme = {
-  ...defaultTheme,
-  page: {
-    ...defaultTheme.page,
-    width: 600,
-    height: 1200,
-  },
-}
-
-const pages = await renderMarkdown(document, {
-  painter: createSkiaCanvasPainter(theme),
+const theme = mergeTheme(defaultTheme, {
+  page: { width: 600, height: 1200 },
 })
+
+const pages = await renderMarkdown(document, { theme })
 ```
 == Rendered
 ![Custom page height output](/examples/features/custom-height.png)
+:::
+
+## Themes
+
+marknative ships with 10 built-in themes and a full theme customization API. See the [Themes showcase](/showcase/themes) for all themes and the [Themes guide](/guide/themes) for the complete reference.
+
+:::tabs
+== Code
+```ts
+// Built-in theme by name
+const pages = await renderMarkdown(markdown, { theme: 'dark' })
+const pages = await renderMarkdown(markdown, { theme: 'nord' })
+
+// Partial color override
+const pages = await renderMarkdown(markdown, {
+  theme: { colors: { background: '#1e1e2e', text: '#cdd6f4' } },
+})
+
+// Gradient background
+import { mergeTheme, defaultTheme } from 'marknative'
+const theme = mergeTheme(defaultTheme, {
+  colors: {
+    background: '#0d1b2a',
+    backgroundGradient: {
+      type: 'radial',
+      stops: [
+        { offset: 0, color: '#0d2540' },
+        { offset: 1, color: '#060e18' },
+      ],
+    },
+    text: '#b8d4e8',
+  },
+})
+```
+== dark
+![dark theme](/examples/themes/theme-dark.png)
+== nord
+![nord theme](/examples/themes/theme-nord.png)
+== ocean
+![ocean theme](/examples/themes/theme-ocean.png)
 :::

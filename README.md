@@ -98,8 +98,10 @@ Parses, lays out, paginates, and paints a Markdown document. Returns one output 
 function renderMarkdown(
   markdown: string,
   options?: {
-    format?: 'png' | 'svg'   // default: 'png'
-    painter?: Painter         // override the paint backend
+    format?: 'png' | 'svg'                      // default: 'png'
+    singlePage?: boolean                         // render into one image instead of paginating
+    theme?: BuiltInThemeName | ThemeOverrides    // default: defaultTheme
+    painter?: Painter                            // override the paint backend
   },
 ): Promise<RenderPage[]>
 ```
@@ -128,7 +130,7 @@ function parseMarkdown(markdown: string): MarkdownDocument
 
 ### `defaultTheme`
 
-The built-in theme object. Page size is 1080 × 1440 px (portrait card ratio). Font sizes, line heights, margins, and block spacing are all defined here.
+The built-in default theme. Page size is 1080 × 1440 px (portrait card ratio). Font sizes, line heights, margins, and block spacing are all defined here.
 
 ```ts
 import { defaultTheme } from 'marknative'
@@ -136,6 +138,68 @@ import { defaultTheme } from 'marknative'
 console.log(defaultTheme.page)
 // { width: 1080, height: 1440, margin: { top: 80, right: 72, bottom: 80, left: 72 } }
 ```
+
+---
+
+### Theme System
+
+marknative ships with 10 built-in themes and a full theme customization API.
+
+**Built-in themes** — pass a name string as the `theme` option:
+
+```ts
+// 'default' | 'github' | 'solarized' | 'sepia' | 'rose'
+// 'dark' | 'nord' | 'dracula' | 'ocean' | 'forest'
+const pages = await renderMarkdown(markdown, { theme: 'dark' })
+const pages = await renderMarkdown(markdown, { theme: 'nord' })
+```
+
+**Partial overrides** — merged onto `defaultTheme`:
+
+```ts
+const pages = await renderMarkdown(markdown, {
+  theme: {
+    colors: { background: '#1e1e2e', text: '#cdd6f4' },
+    page: { width: 800 },
+  },
+})
+```
+
+**Full control with `mergeTheme`**:
+
+```ts
+import { mergeTheme, getBuiltInTheme } from 'marknative'
+
+const myTheme = mergeTheme(getBuiltInTheme('nord'), {
+  colors: { link: '#ff6b6b' },
+})
+
+const pages = await renderMarkdown(markdown, { theme: myTheme })
+```
+
+**Gradient backgrounds**:
+
+```ts
+import { mergeTheme, defaultTheme } from 'marknative'
+
+const theme = mergeTheme(defaultTheme, {
+  colors: {
+    background: '#0f0c29',
+    backgroundGradient: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { offset: 0,   color: '#24243e' },
+        { offset: 0.5, color: '#302b63' },
+        { offset: 1,   color: '#0f0c29' },
+      ],
+    },
+    text: '#e8e0ff',
+  },
+})
+```
+
+See the [Themes guide](https://liyown.github.io/marknative/guide/themes) and [Themes showcase](https://liyown.github.io/marknative/showcase/themes) for the full reference.
 
 ---
 
@@ -268,7 +332,7 @@ for (const page of pages) {
 - [ ] Improve paragraph line-breaking quality for English prose
 - [ ] Refine CJK and mixed Chinese-English line-breaking rules
 - [ ] Improve code block and table rendering quality
-- [ ] Expose public theme and page configuration API
+- [x] Expose public theme and page configuration API
 - [ ] Support custom fonts
 - [ ] Complete GFM coverage (footnotes, autolinks)
 
