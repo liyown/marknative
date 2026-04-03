@@ -4,7 +4,8 @@
     "noEmit": false,
     "declaration": true,
     "declarationDir": "dist",
-    "emitDeclarationOnly": true
+    "emitDeclarationOnly": true,
+    "rootDir": "src"
   },
   "include": ["src"],
   "exclude": ["node_modules", "tests", "dist"]
