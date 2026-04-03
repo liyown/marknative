@@ -28,17 +28,24 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install skia-canvas system dependencies
-        run: sudo apt-get install -y libgles2 libgbm-dev libegl1 libfontconfig1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install system dependencies
+        run: sudo apt-get install -y libfontconfig1
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Rebuild skia-canvas for Linux
+        run: cd node_modules/skia-canvas && npx node-pre-gyp install --fallback-to-build=false
 
       - name: Generate example images
         run: bun run docs:examples
 
       - name: Build docs
-        run: vitepress build docs
+        run: bunx vitepress build docs
 
       - name: Upload Pages artifact
         if: github.ref == 'refs/heads/main'

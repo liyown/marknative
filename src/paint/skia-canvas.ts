@@ -57,8 +57,9 @@ async function loadSkiaCanvas(): Promise<SkiaCanvasModule> {
   if (!skiaCanvasLoader) {
     skiaCanvasLoader = import('skia-canvas')
       .then((module) => module as unknown as SkiaCanvasModule)
-      .catch((error) => {
-        throw new Error('marknative requires skia-canvas to render pages', { cause: error })
+      .catch((error: unknown) => {
+        const reason = error instanceof Error ? `: ${error.message}` : ''
+        throw new Error(`marknative requires skia-canvas to render pages${reason}`, { cause: error })
       })
   }
 
