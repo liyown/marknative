@@ -2,6 +2,8 @@
 
 **A native Markdown rendering engine that produces paginated PNG/SVG documents — no browser, no Chromium, no DOM.**
 
+📖 **[Documentation](https://liyown.github.io/marknative/)** — Guide · Showcase · API Reference
+
 Most Markdown rendering pipelines go through a browser:
 
 ```
