@@ -3,10 +3,10 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: 'marknative',
   description: 'Native Markdown rendering engine — produces paginated PNG/SVG documents without a browser',
-  base: '/NoteCard/',
+  base: '/marknative/',
   srcExclude: ['**/superpowers/**'],
 
-  head: [['link', { rel: 'icon', href: '/NoteCard/favicon.svg' }]],
+  head: [['link', { rel: 'icon', href: '/marknative/favicon.svg' }]],
 
   themeConfig: {
     logo: { svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h10M7 12h6M7 16h8"/></svg>' },
@@ -16,7 +16,7 @@ export default defineConfig({
       { text: 'API', link: '/api/reference' },
       {
         text: 'Changelog',
-        link: 'https://github.com/liyown/NoteCard/releases',
+        link: 'https://github.com/liyown/marknative/releases',
       },
     ],
 
@@ -36,7 +36,7 @@ export default defineConfig({
       },
     ],
 
-    socialLinks: [{ icon: 'github', link: 'https://github.com/liyown/NoteCard' }],
+    socialLinks: [{ icon: 'github', link: 'https://github.com/liyown/marknative' }],
 
     footer: {
       message: 'Released under the MIT License.',
@@ -46,7 +46,7 @@ export default defineConfig({
     search: { provider: 'local' },
 
     editLink: {
-      pattern: 'https://github.com/liyown/NoteCard/edit/main/docs/:path',
+      pattern: 'https://github.com/liyown/marknative/edit/main/docs/:path',
       text: 'Edit this page on GitHub',
     },
   },
