@@ -44,7 +44,10 @@ jobs:
           cd "$SKIA" && npx node-pre-gyp install --fallback-to-build=false
 
       - name: Build docs
-        run: bun run docs:build
+        run: |
+          cd packages/marknative-docs
+          bun run examples
+          bunx vitepress build
 
       - name: Upload Pages artifact
         if: github.ref == 'refs/heads/main'
