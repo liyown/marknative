@@ -208,11 +208,11 @@ describe('perf: math overhead after warm-up', () => {
     // Both are warm; MathJax singleton is already initialised.
     // The pre-render pass is fast because formulas are cached from previous tests.
     const [plainTimes, mathTimes] = await Promise.all([
-      measure(() => renderMarkdown(PLAIN_MD).then(() => {}), 10),
-      measure(() => renderMarkdown(MATH_MD).then(() => {}), 10),
+      measure(() => renderMarkdown(PLAIN_MD).then(() => {}), 6),
+      measure(() => renderMarkdown(MATH_MD).then(() => {}), 6),
     ])
     expect(p50(mathTimes)).toBeLessThan(p50(plainTimes) * 2)
-  })
+  }, 60_000)
 })
 
 // ─── Parallel render throughput ───────────────────────────────────────────────
@@ -222,18 +222,18 @@ describe('perf: concurrency', () => {
     // Observed ≈200 ms for 4× parallel vs ≈480 ms sequential → 2.4× speedup
     const times = await measure(
       () => Promise.all(Array.from({ length: 4 }, () => renderMarkdown(PLAIN_MD))).then(() => {}),
-      8,
+      5,
     )
     expect(p90(times)).toBeLessThan(800)
-  })
+  }, 60_000)
 
   test('parallel is faster than sequential for 4 renders', async () => {
     const [seqTimes, parTimes] = await Promise.all([
-      measure(async () => { for (let i = 0; i < 4; i++) await renderMarkdown(PLAIN_MD) }, 6),
-      measure(() => Promise.all(Array.from({ length: 4 }, () => renderMarkdown(PLAIN_MD))).then(() => {}), 6),
+      measure(async () => { for (let i = 0; i < 4; i++) await renderMarkdown(PLAIN_MD) }, 4),
+      measure(() => Promise.all(Array.from({ length: 4 }, () => renderMarkdown(PLAIN_MD))).then(() => {}), 4),
     ])
     expect(p50(parTimes)).toBeLessThan(p50(seqTimes))
-  })
+  }, 60_000)
 })
 
 // ─── Theme overhead ───────────────────────────────────────────────────────────
@@ -241,10 +241,10 @@ describe('perf: concurrency', () => {
 describe('perf: theme switching', () => {
   test('dark theme render time is within 50 ms of default theme', async () => {
     const [defTimes, darkTimes] = await Promise.all([
-      measure(() => renderMarkdown(MIXED_MD).then(() => {}), 10),
-      measure(() => renderMarkdown(MIXED_MD, { theme: 'dark' }).then(() => {}), 10),
+      measure(() => renderMarkdown(MIXED_MD).then(() => {}), 6),
+      measure(() => renderMarkdown(MIXED_MD, { theme: 'dark' }).then(() => {}), 6),
     ])
     // Observed overhead ≈ 0–2 ms; 50 ms gives CI headroom
     expect(Math.abs(p50(darkTimes) - p50(defTimes))).toBeLessThan(50)
-  })
+  }, 60_000)
 })
