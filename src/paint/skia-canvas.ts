@@ -20,7 +20,7 @@ import type { GradientFill, ThemeColors } from '../theme/default-theme'
 import { defaultTheme, type Theme } from '../theme/default-theme'
 import { withFontStyle, withFontWeight } from '../layout/font-utils'
 
-const PNG_SCALE = 2
+const PNG_SCALE_DEFAULT = 2
 
 type SkiaCanvasModule = {
   Canvas: new (width?: number, height?: number) => {
@@ -32,10 +32,10 @@ type SkiaCanvasModule = {
 
 let skiaCanvasLoader: Promise<SkiaCanvasModule> | null = null
 
-export function createSkiaCanvasPainter(theme: Theme = defaultTheme): Painter {
+export function createSkiaCanvasPainter(theme: Theme = defaultTheme, scale = PNG_SCALE_DEFAULT): Painter {
   return {
     renderPng(page: PaintPage): Promise<Buffer> {
-      return renderWithSkia(page, theme, 'png')
+      return renderWithSkia(page, theme, 'png', scale)
     },
     renderSvg(page: PaintPage): Promise<string> {
       return renderWithSkia(page, theme, 'svg').then((buffer) => buffer.toString('utf8'))
@@ -60,9 +60,10 @@ async function renderWithSkia(
   page: PaintPage,
   theme: Theme,
   format: 'png' | 'svg',
+  pngScale = PNG_SCALE_DEFAULT,
 ): Promise<Buffer> {
   const skiaCanvas = await loadSkiaCanvas()
-  const scale = format === 'png' ? PNG_SCALE : 1
+  const scale = format === 'png' ? pngScale : 1
   const canvas = new skiaCanvas.Canvas(Math.ceil(page.width * scale), Math.ceil(page.height * scale))
   const context = canvas.getContext('2d')
 

@@ -77,6 +77,19 @@ export type RenderMarkdownOptions = {
      */
     theme?: string
   }
+  /**
+   * Pixel density multiplier applied to PNG output only.
+   * Higher values produce sharper images at the cost of larger files and
+   * longer encoding time (encoding cost scales with pixel count).
+   *
+   * - `1` — native resolution (~29 ms/page encode, smallest files)
+   * - `1.5` — balanced (~58 ms/page encode)
+   * - `2` — retina quality, default (~99 ms/page encode)
+   *
+   * Has no effect on SVG output.
+   * @default 2
+   */
+  scale?: number
 }
 
 export type RenderPage =
@@ -117,7 +130,7 @@ export async function renderMarkdown(markdown: string, options: RenderMarkdownOp
     restoreMeasurementSupport()
   }
 
-  const painter = options.painter ?? createSkiaCanvasPainter(theme)
+  const painter = options.painter ?? createSkiaCanvasPainter(theme, options.scale)
   const format = options.format ?? 'png'
 
   return Promise.all(
