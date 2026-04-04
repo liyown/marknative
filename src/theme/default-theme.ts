@@ -97,6 +97,7 @@ export type Theme = {
     quote: { marginBottom: number; padding: number }
     table: { marginBottom: number; cellPadding: number }
     image: { marginBottom: number }
+    math: { marginBottom: number; padding: number }
   }
   colors: ThemeColors
 }
@@ -146,6 +147,7 @@ export const defaultTheme: Theme = {
     quote: { marginBottom: 16, padding: 12 },
     table: { marginBottom: 24, cellPadding: 16 },
     image: { marginBottom: 24 },
+    math: { marginBottom: 24, padding: 16 },
   },
   colors: {
     background: '#ffffff',

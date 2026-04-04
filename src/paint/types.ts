@@ -15,7 +15,10 @@ export type PaintBox = {
 export type PaintLineRun = PaintBox & {
   type: 'text'
   text: string
-  styleKind: 'text' | 'strong' | 'emphasis' | 'inlineCode' | 'link' | 'delete' | 'inlineImage' | 'codeToken'
+  styleKind: 'text' | 'strong' | 'emphasis' | 'inlineCode' | 'link' | 'delete' | 'inlineImage' | 'codeToken' | 'inlineMath'
+  /** SVG data URI for inline math runs (styleKind === 'inlineMath') */
+  url?: string
+  mathDepth?: number
   color?: string
   fontStyle?: 'italic'
   fontWeight?: 'bold'
@@ -115,6 +118,12 @@ export type PaintImageFragment = PaintFragmentBase & {
   title: string | null
 }
 
+export type PaintMathBlockFragment = PaintFragmentBase & {
+  kind: 'mathBlock'
+  svgBuffer: Buffer
+  intrinsicWidth: number
+}
+
 export type PaintBlockFragment =
   | PaintParagraphFragment
   | PaintHeadingFragment
@@ -124,6 +133,7 @@ export type PaintBlockFragment =
   | PaintTableFragment
   | PaintThematicBreakFragment
   | PaintImageFragment
+  | PaintMathBlockFragment
 
 export type PaintPage = {
   type: 'page'

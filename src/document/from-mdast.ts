@@ -10,10 +10,12 @@ import type {
   InlineCodeNode,
   InlineImageNode,
   InlineNode,
+  InlineMathNode,
   LinkNode,
   ListItemNode,
   ListNode,
   MarkdownDocument,
+  MathBlockNode,
   ParagraphNode,
   StrongNode,
   TableCellNode,
@@ -116,6 +118,8 @@ function convertBlockNode(node: MdastNode, definitions: DefinitionMap): BlockNod
       return [convertImage(node)]
     case 'html':
       return [convertHtmlBlock(node)]
+    case 'math':
+      return [convertMathBlock(node)]
     case 'definition':
       return []
     default:
@@ -264,6 +268,8 @@ function convertInlineNode(node: MdastNode, definitions: DefinitionMap): InlineN
       return [convertDelete(node, definitions)]
     case 'break':
       return [convertBreak()]
+    case 'inlineMath':
+      return [convertInlineMath(node)]
     default:
       throwUnsupportedNode(node)
   }
@@ -358,6 +364,20 @@ function convertDelete(node: MdastNode, definitions: DefinitionMap): DeleteNode 
 function convertBreak(): BreakNode {
   return {
     type: 'break',
+  }
+}
+
+function convertMathBlock(node: MdastNode): MathBlockNode {
+  return {
+    type: 'mathBlock',
+    value: node.value ?? '',
+  }
+}
+
+function convertInlineMath(node: MdastNode): InlineMathNode {
+  return {
+    type: 'inlineMath',
+    value: node.value ?? '',
   }
 }
 

@@ -7,8 +7,10 @@ import type {
   CodeBlockNode,
   HeadingNode,
   ImageNode,
+  InlineMathNode,
   ListNode,
   MarkdownDocument,
+  MathBlockNode,
   ParagraphNode,
   TableNode,
 } from '../../document/types'
@@ -16,6 +18,7 @@ import { defaultTheme, type Theme, type TypographyStyle } from '../../theme/defa
 import { withFontStyle, withFontWeight } from '../font-utils'
 import type { HighlightedCodeBlock } from '../../highlight/types'
 import type { CodeToken } from '../../highlight/types'
+import type { RenderedMath } from '../../math/render-math'
 import type {
   BlockquoteFragment,
   BlockLayoutFragment,
@@ -25,6 +28,7 @@ import type {
   ListFragment,
   ListItemFragment,
   ListMarker,
+  MathBlockFragment,
   ParagraphFragment,
   PaintBox,
   TableCellFragment,
@@ -41,6 +45,7 @@ type LayoutContext = {
   width: number
   theme: Theme
   highlightedBlocks: Map<CodeBlockNode, HighlightedCodeBlock>
+  renderedMath: Map<MathBlockNode | InlineMathNode, RenderedMath>
 }
 
 type LayoutResult<T extends BlockLayoutFragment> = {
@@ -52,6 +57,7 @@ export function layoutDocument(
   doc: MarkdownDocument,
   theme: Theme = defaultTheme,
   highlightedBlocks: Map<CodeBlockNode, HighlightedCodeBlock> = new Map(),
+  renderedMath: Map<MathBlockNode | InlineMathNode, RenderedMath> = new Map(),
 ): BlockLayoutFragment[] {
   const { fragments } = layoutBlocks(doc.children, {
     x: theme.page.margin.left,
@@ -59,6 +65,7 @@ export function layoutDocument(
     width: theme.page.width - theme.page.margin.left - theme.page.margin.right,
     theme,
     highlightedBlocks,
+    renderedMath,
   })
 
   return fragments
@@ -111,6 +118,8 @@ function layoutBlock(node: BlockNode, context: LayoutContext): LayoutResult<Bloc
       return layoutThematicBreak(context)
     case 'image':
       return layoutImage(node, context)
+    case 'mathBlock':
+      return layoutMathBlock(node, context)
     default:
       throw new Error(`Unsupported block node: ${(node as { type: string }).type}`)
   }
@@ -118,7 +127,7 @@ function layoutBlock(node: BlockNode, context: LayoutContext): LayoutResult<Bloc
 
 function layoutHeading(node: HeadingNode, context: LayoutContext): LayoutResult<HeadingFragment> {
   const bodyStyle = headingTypography(node.depth, context.theme)
-  const lines = layoutInlineLines(node.children, context.x, context.y, context.width, context.theme, bodyStyle)
+  const lines = layoutInlineLines(node.children, context.x, context.y, context.width, context, bodyStyle)
   const box = fragmentBox(context.x, context.y, context.width, lines)
 
   return {
@@ -139,7 +148,7 @@ function layoutParagraph(node: ParagraphNode, context: LayoutContext): LayoutRes
     context.x,
     context.y,
     context.width,
-    context.theme,
+    context,
     context.theme.typography.body,
   )
   const box = fragmentBox(context.x, context.y, context.width, lines)
@@ -372,7 +381,7 @@ function layoutTableRow(
       cellX + cellPadding,
       context.y + cellPadding,
       Math.max(1, columnWidth - cellPadding * 2),
-      context.theme,
+      context,
       context.theme.typography.body,
     )
     const cellHeight = fragmentHeight(lines) + cellPadding * 2
@@ -453,15 +462,51 @@ function layoutImage(node: ImageNode, context: LayoutContext): LayoutResult<Imag
   }
 }
 
+function layoutMathBlock(node: MathBlockNode, context: LayoutContext): LayoutResult<MathBlockFragment> {
+  const rendered = context.renderedMath.get(node)
+  const padding = context.theme.blocks.math.padding
+
+  // Clamp rendered width to available content width; maintain aspect ratio for height
+  const intrinsicWidth = rendered?.width ?? context.width
+  const intrinsicHeight = rendered?.height ?? context.theme.typography.body.lineHeight * 2
+  const displayWidth = Math.min(intrinsicWidth, context.width - padding * 2)
+  const scale = displayWidth / intrinsicWidth
+  const displayHeight = Math.round(intrinsicHeight * scale)
+  const boxHeight = displayHeight + padding * 2
+
+  const box = {
+    x: context.x,
+    y: context.y,
+    width: context.width,
+    height: boxHeight,
+  }
+
+  return {
+    fragment: {
+      type: 'fragment',
+      kind: 'mathBlock',
+      box,
+      svgBuffer: rendered?.svgBuffer ?? Buffer.alloc(0),
+      intrinsicWidth,
+    },
+    nextY: context.y + boxHeight + context.theme.blocks.math.marginBottom,
+  }
+}
+
 function layoutInlineLines(
   runs: ParagraphNode['children'],
   x: number,
   y: number,
   width: number,
-  theme: Theme,
+  context: LayoutContext,
   bodyStyle: Theme['typography']['body'],
 ): LineBox[] {
-  return offsetLineBoxes(layoutInlineRuns(runs, Math.max(1, width), withBodyTypography(theme, bodyStyle)), x, y)
+  const inlineMathMap = context.renderedMath as Map<InlineMathNode, RenderedMath>
+  return offsetLineBoxes(
+    layoutInlineRuns(runs, Math.max(1, width), withBodyTypography(context.theme, bodyStyle), inlineMathMap),
+    x,
+    y,
+  )
 }
 
 function withBodyTypography(theme: Theme, bodyStyle: Theme['typography']['body']): Theme {

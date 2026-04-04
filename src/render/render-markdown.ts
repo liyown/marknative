@@ -10,6 +10,7 @@ import type {
   LineRun,
   ListFragment,
   ListItemFragment,
+  MathBlockFragment,
   Page,
   ParagraphFragment,
   TableCellFragment,
@@ -17,10 +18,12 @@ import type {
   TableRowFragment,
   ThematicBreakFragment,
 } from '../layout/types'
-import type { BlockNode, CodeBlockNode, MarkdownDocument } from '../document/types'
+import type { BlockNode, CodeBlockNode, InlineMathNode, MarkdownDocument, MathBlockNode } from '../document/types'
 import { layoutDocument } from '../layout/block/layout-document'
 import type { HighlightedCodeBlock } from '../highlight/types'
 import { highlightCodeBlock } from '../highlight/highlight-code'
+import type { RenderedMath } from '../math/render-math'
+import { prerenderMath } from '../math/render-math'
 import { paginateFragments, singlePageFromFragments } from '../layout/pagination/paginate'
 import { parseMarkdown } from '../parser/parse-markdown'
 import { createSkiaCanvasPainter } from '../paint/skia-canvas'
@@ -35,6 +38,7 @@ import type {
   PaintLineRun,
   PaintListFragment,
   PaintListItemFragment,
+  PaintMathBlockFragment,
   PaintPage,
   PaintParagraphFragment,
   PaintTableCellFragment,
@@ -91,13 +95,18 @@ export async function renderMarkdown(markdown: string, options: RenderMarkdownOp
   const theme = resolveTheme(options.theme)
   const parsedDoc = parseMarkdown(markdown)
   const shikiTheme = options.codeHighlighting?.theme ?? 'github-light'
-  const highlightedBlocks = await preHighlightCodeBlocks(parsedDoc, shikiTheme)
+
+  const fontSize = parseFontSizeFromTheme(theme)
+  const [highlightedBlocks, renderedMath] = await Promise.all([
+    preHighlightCodeBlocks(parsedDoc, shikiTheme),
+    prerenderMath(parsedDoc, fontSize, theme.colors.text),
+  ])
 
   const restoreMeasurementSupport = ensureTextMeasurementSupport()
   let paintPages: PaintPage[]
 
   try {
-    const fragments = layoutDocument(parsedDoc, theme, highlightedBlocks)
+    const fragments = layoutDocument(parsedDoc, theme, highlightedBlocks, renderedMath)
     const layoutPages = options.singlePage
       ? [singlePageFromFragments(fragments, theme)]
       : paginateFragments(fragments, theme)
@@ -165,6 +174,8 @@ function mapBlockFragment(fragment: LayoutFragment): PaintBlockFragment {
       return mapThematicBreak(fragment)
     case 'image':
       return mapImage(fragment)
+    case 'mathBlock':
+      return mapMathBlock(fragment)
   }
 }
 
@@ -282,6 +293,16 @@ function mapImage(fragment: ImageFragment): PaintImageFragment {
   }
 }
 
+function mapMathBlock(fragment: MathBlockFragment): PaintMathBlockFragment {
+  return {
+    type: 'fragment',
+    kind: 'mathBlock',
+    box: mapBox(fragment.box),
+    svgBuffer: fragment.svgBuffer,
+    intrinsicWidth: fragment.intrinsicWidth,
+  }
+}
+
 function mapLine(line: LineBox): PaintLineBox {
   return {
     type: 'line',
@@ -303,10 +324,19 @@ function mapRun(run: LineRun): PaintLineRun {
     height: run.height,
     text: run.text,
     styleKind: run.styleKind,
+    url: run.url,
+    mathDepth: run.mathDepth,
     color: run.color,
     fontStyle: run.fontStyle,
     fontWeight: run.fontWeight,
   }
+}
+
+// ─── Font size helper ─────────────────────────────────────────────────────────
+
+function parseFontSizeFromTheme(theme: { typography: { body: { font: string } } }): number {
+  const match = theme.typography.body.font.match(/(\d+(?:\.\d+)?)\s*px/)
+  return match ? parseFloat(match[1]!) : 16
 }
 
 // ─── Code block pre-highlighting ─────────────────────────────────────────────

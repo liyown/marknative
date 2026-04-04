@@ -21,7 +21,14 @@ export type PaintBox = {
 export type LineRun = PaintBox & {
   type: 'text'
   text: string
-  styleKind: 'text' | 'strong' | 'emphasis' | 'inlineCode' | 'link' | 'delete' | 'inlineImage' | 'codeToken'
+  styleKind: 'text' | 'strong' | 'emphasis' | 'inlineCode' | 'link' | 'delete' | 'inlineImage' | 'codeToken' | 'inlineMath'
+  /** SVG data URI for inline math runs (styleKind === 'inlineMath') */
+  url?: string
+  /**
+   * For inline math: descent below the text baseline in px (from MathJax vertical-align).
+   * Used to vertically align the formula with surrounding text.
+   */
+  mathDepth?: number
   color?: string
   fontStyle?: 'italic'
   fontWeight?: 'bold'
@@ -122,6 +129,13 @@ export type ImageFragment = FragmentBase & {
   title: string | null
 }
 
+export type MathBlockFragment = FragmentBase & {
+  kind: 'mathBlock'
+  svgBuffer: Buffer
+  /** Intrinsic rendered width (px) from MathJax */
+  intrinsicWidth: number
+}
+
 export type BlockLayoutFragment =
   | ParagraphFragment
   | HeadingFragment
@@ -131,6 +145,7 @@ export type BlockLayoutFragment =
   | TableFragment
   | ThematicBreakFragment
   | ImageFragment
+  | MathBlockFragment
 
 export type StructuralLayoutFragment =
   | ListItemFragment

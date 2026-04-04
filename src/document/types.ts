@@ -12,6 +12,7 @@ export type BlockNode =
   | TableNode
   | ThematicBreakNode
   | ImageNode
+  | MathBlockNode
 
 export type InlineNode =
   | TextNode
@@ -22,6 +23,7 @@ export type InlineNode =
   | InlineImageNode
   | DeleteNode
   | BreakNode
+  | InlineMathNode
 
 export type HeadingNode = {
   type: 'heading'
@@ -130,4 +132,14 @@ export type DeleteNode = {
 
 export type BreakNode = {
   type: 'break'
+}
+
+export type MathBlockNode = {
+  type: 'mathBlock'
+  value: string
+}
+
+export type InlineMathNode = {
+  type: 'inlineMath'
+  value: string
 }

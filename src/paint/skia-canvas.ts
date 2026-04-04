@@ -9,6 +9,7 @@ import type {
   PaintLineRun,
   PaintListFragment,
   PaintListItemFragment,
+  PaintMathBlockFragment,
   PaintPage,
   PaintTableFragment,
   PaintTableRowFragment,
@@ -80,6 +81,8 @@ async function preloadPageImages(page: PaintPage, skiaCanvas: SkiaCanvasModule):
   const urls = new Set<string>()
   for (const fragment of page.fragments) {
     collectImageUrls(fragment, urls)
+    collectInlineMathUrls(fragment, urls)
+    collectMathBlockUris(fragment, urls)
   }
 
   const entries = await Promise.all(
@@ -97,7 +100,22 @@ async function preloadPageImages(page: PaintPage, skiaCanvas: SkiaCanvasModule):
   return new Map(entries.filter((e): e is [string, SkiaImage] => e !== null))
 }
 
+function collectMathBlockUris(fragment: PaintBlockFragment, urls: Set<string>): void {
+  if (fragment.kind === 'mathBlock' && fragment.svgBuffer.length > 0) {
+    urls.add(`data:image/svg+xml;base64,${Buffer.from(fragment.svgBuffer).toString('base64')}`)
+  }
+}
+
 async function fetchImageSource(url: string): Promise<string | Buffer> {
+  if (url.startsWith('data:')) {
+    // data URI — extract the base64 payload and return as Buffer
+    const commaIndex = url.indexOf(',')
+    if (commaIndex !== -1) {
+      return Buffer.from(url.slice(commaIndex + 1), 'base64')
+    }
+    throw new Error('Invalid data URI')
+  }
+
   if (url.startsWith('http://') || url.startsWith('https://')) {
     const response = await fetch(url)
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
@@ -117,14 +135,46 @@ function collectImageUrls(fragment: PaintBlockFragment, urls: Set<string>): void
       for (const item of fragment.items) {
         for (const child of item.children) {
           collectImageUrls(child, urls)
+          collectInlineMathUrls(child, urls)
+          collectMathBlockUris(child, urls)
         }
       }
       return
     case 'blockquote':
       for (const child of fragment.children) {
         collectImageUrls(child, urls)
+        collectInlineMathUrls(child, urls)
+        collectMathBlockUris(child, urls)
       }
       return
+    case 'table': {
+      const allRows = [fragment.header, ...fragment.rows]
+      for (const row of allRows) {
+        for (const cell of row.cells) {
+          collectInlineMathUrlsFromLines(cell.lines, urls)
+        }
+      }
+      return
+    }
+  }
+}
+
+function collectInlineMathUrls(fragment: PaintBlockFragment, urls: Set<string>): void {
+  if (!('lines' in fragment) || !fragment.lines) return
+  collectInlineMathUrlsFromLines(fragment.lines, urls)
+}
+
+function collectInlineMathUrlsFromLines(
+  lines: PaintLineBox[] | undefined,
+  urls: Set<string>,
+): void {
+  if (!lines) return
+  for (const line of lines) {
+    for (const run of line.runs) {
+      if (run.styleKind === 'inlineMath' && run.url) {
+        urls.add(run.url)
+      }
+    }
   }
 }
 
@@ -200,12 +250,12 @@ function drawFragment(
   images: Map<string, SkiaImage>,
 ): void {
   if (fragment.kind === 'heading') {
-    drawLines(context, fragment.lines, resolveHeadingTypography(fragment, theme), theme)
+    drawLines(context, fragment.lines, resolveHeadingTypography(fragment, theme), theme, images)
     return
   }
 
   if (fragment.kind === 'paragraph') {
-    drawLines(context, fragment.lines, theme.typography.body, theme)
+    drawLines(context, fragment.lines, theme.typography.body, theme, images)
     return
   }
 
@@ -220,13 +270,16 @@ function drawFragment(
       drawBlockquoteFragment(context, fragment, theme, images)
       return
     case 'table':
-      drawTableFragment(context, fragment, theme)
+      drawTableFragment(context, fragment, theme, images)
       return
     case 'image':
       drawImageFragment(context, fragment, theme, images)
       return
     case 'thematicBreak':
       drawThematicBreak(context, fragment, theme)
+      return
+    case 'mathBlock':
+      drawMathBlockFragment(context, fragment, theme, images)
       return
   }
 }
@@ -236,11 +289,12 @@ function drawLines(
   lines: PaintLineBox[] | undefined,
   baseTypography: Theme['typography']['body'],
   theme: Theme,
+  images: Map<string, SkiaImage>,
 ): void {
   if (!lines) return
 
   for (const line of lines) {
-    drawLine(context, line, baseTypography, theme)
+    drawLine(context, line, baseTypography, theme, images)
   }
 }
 
@@ -249,9 +303,10 @@ function drawLine(
   line: PaintLineBox,
   baseTypography: Theme['typography']['body'],
   theme: Theme,
+  images: Map<string, SkiaImage>,
 ): void {
   for (const run of line.runs) {
-    drawRun(context, line, run, baseTypography, theme)
+    drawRun(context, line, run, baseTypography, theme, images)
   }
 }
 
@@ -261,10 +316,26 @@ function drawRun(
   run: PaintLineRun,
   baseTypography: Theme['typography']['body'],
   theme: Theme,
+  images: Map<string, SkiaImage>,
 ): void {
   const font = fontForRun(run, baseTypography, theme)
   const fillStyle = colorForRun(run, theme)
   const baseline = line.baseline
+
+  if (run.styleKind === 'inlineMath' && run.url) {
+    const image = images.get(run.url)
+    if (image) {
+      // run.height is inflated to the full line height by finalizeLine, so we
+      // recover the formula's actual height from the image aspect ratio.
+      // The SVG is stored at 2× physical dimensions; width/height ratio equals
+      // the 1× logical ratio, so this gives the correct 1× draw height.
+      const drawW = run.width
+      const drawH = Math.round(drawW * image.height / image.width)
+      const drawY = baseline - (drawH - (run.mathDepth ?? 0))
+      context.drawImage(image as never, run.x, drawY, drawW, drawH)
+    }
+    return
+  }
 
   context.font = font
   context.fillStyle = fillStyle
@@ -309,13 +380,15 @@ function drawRun(
   }
 }
 
+const EMPTY_IMAGE_MAP: Map<string, SkiaImage> = new Map()
+
 function drawCodeFragment(context: CanvasRenderingContext2D, fragment: PaintCodeFragment, theme: Theme): void {
   context.fillStyle = theme.colors.codeBackground
   context.fillRect(fragment.box.x, fragment.box.y, fragment.box.width, fragment.box.height)
   context.strokeStyle = theme.colors.subtleBorder
   context.lineWidth = 1
   context.strokeRect(fragment.box.x, fragment.box.y, fragment.box.width, fragment.box.height)
-  drawLines(context, fragment.lines, theme.typography.code, theme)
+  drawLines(context, fragment.lines, theme.typography.code, theme, EMPTY_IMAGE_MAP)
 }
 
 function drawListFragment(context: CanvasRenderingContext2D, fragment: PaintListFragment, theme: Theme, images: Map<string, SkiaImage>): void {
@@ -368,7 +441,7 @@ function drawBlockquoteFragment(
   }
 }
 
-function drawTableFragment(context: CanvasRenderingContext2D, fragment: PaintTableFragment, theme: Theme): void {
+function drawTableFragment(context: CanvasRenderingContext2D, fragment: PaintTableFragment, theme: Theme, images: Map<string, SkiaImage>): void {
   // Header background — use dedicated token, fall back to codeBackground
   const headerBg = theme.colors.tableHeaderBackground ?? theme.colors.codeBackground
   context.fillStyle = headerBg
@@ -378,18 +451,18 @@ function drawTableFragment(context: CanvasRenderingContext2D, fragment: PaintTab
     fragment.header.box.width,
     fragment.header.box.height,
   )
-  drawTableRow(context, fragment.header, theme)
+  drawTableRow(context, fragment.header, theme, images)
   for (const row of fragment.rows) {
-    drawTableRow(context, row, theme)
+    drawTableRow(context, row, theme, images)
   }
 }
 
-function drawTableRow(context: CanvasRenderingContext2D, row: PaintTableRowFragment, theme: Theme): void {
+function drawTableRow(context: CanvasRenderingContext2D, row: PaintTableRowFragment, theme: Theme, images: Map<string, SkiaImage>): void {
   for (const cell of row.cells) {
     context.strokeStyle = theme.colors.border
     context.lineWidth = 1
     context.strokeRect(cell.box.x, cell.box.y, cell.box.width, cell.box.height)
-    drawLines(context, cell.lines, theme.typography.body, theme)
+    drawLines(context, cell.lines, theme.typography.body, theme, images)
   }
 }
 
@@ -431,6 +504,33 @@ function drawThematicBreak(context: CanvasRenderingContext2D, fragment: PaintThe
   context.moveTo(fragment.box.x, fragment.box.y + 0.5)
   context.lineTo(fragment.box.x + fragment.box.width, fragment.box.y + 0.5)
   context.stroke()
+}
+
+function drawMathBlockFragment(
+  context: CanvasRenderingContext2D,
+  fragment: PaintMathBlockFragment,
+  theme: Theme,
+  images: Map<string, SkiaImage>,
+): void {
+  if (fragment.svgBuffer.length === 0) return
+
+  const dataUri = `data:image/svg+xml;base64,${Buffer.from(fragment.svgBuffer).toString('base64')}`
+  const image = images.get(dataUri)
+  if (!image) return
+
+  const padding = theme.blocks.math.padding
+  // Scale to fit content area while keeping aspect ratio.
+  // intrinsicWidth is the 1× logical formula width; image dimensions are 2× (for
+  // high-DPI rasterisation), so derive draw dimensions from intrinsicWidth, not image.width.
+  const availWidth = fragment.box.width - padding * 2
+  const scale = Math.min(1, availWidth / fragment.intrinsicWidth)
+  const drawWidth = Math.round(fragment.intrinsicWidth * scale)
+  const drawHeight = Math.round(drawWidth * (image.height / image.width))
+  // Centre horizontally
+  const drawX = fragment.box.x + Math.round((fragment.box.width - drawWidth) / 2)
+  const drawY = fragment.box.y + padding
+
+  context.drawImage(image as never, drawX, drawY, drawWidth, drawHeight)
 }
 
 function fontForRun(

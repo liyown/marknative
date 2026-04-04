@@ -1,8 +1,9 @@
 import { layoutNextLine, prepareWithSegments } from '@chenglou/pretext'
 
-import type { InlineNode } from '../../document/types'
+import type { InlineNode, InlineMathNode } from '../../document/types'
 import type { LineBox, LineRun } from '../types'
 import type { Theme } from '../../theme/default-theme'
+import type { RenderedMath } from '../../math/render-math'
 import { withFontStyle, withFontWeight } from '../font-utils'
 
 type StyleContext = {
@@ -22,6 +23,15 @@ type PreparedSegment = {
 
 type BreakSegment = {
   type: 'break'
+}
+
+type InlineMathSegment = {
+  /** Display width after clamping to line height */
+  type: 'inlineMath'
+  url: string
+  width: number
+  height: number
+  mathDepth: number
 }
 
 type StyledLineRun = LineRun & {
@@ -44,8 +54,9 @@ export function layoutInlineRuns(
   runs: InlineNode[],
   width: number,
   theme: Theme,
+  renderedMath?: Map<InlineMathNode, RenderedMath>,
 ): LineBox[] {
-  const segments = flattenInlineRuns(runs, theme)
+  const segments = flattenInlineRuns(runs, theme, renderedMath)
   const maxWidth = width > 0 ? width : 1
   const lines: MutableLineBox[] = []
 
@@ -58,6 +69,31 @@ export function layoutInlineRuns(
       lines.push(finalized)
       currentLine = createLineBox(finalized.y + finalized.height)
       pendingTrailingBreak = true
+      continue
+    }
+
+    if (segment.type === 'inlineMath') {
+      // Treat inline math as an atomic image-like box — wrap to next line if needed
+      if (currentLine.width + segment.width > maxWidth + EPSILON && currentLine.runs.length > 0) {
+        lines.push(finalizeLine(currentLine, theme.typography.body.lineHeight))
+        currentLine = createLineBox(lines[lines.length - 1]!.y + lines[lines.length - 1]!.height)
+      }
+      currentLine.runs.push({
+        type: 'text',
+        text: '',
+        x: currentLine.width,
+        y: 0,
+        width: segment.width,
+        height: segment.height,
+        styleKind: 'inlineMath',
+        url: segment.url,
+        mathDepth: segment.mathDepth,
+        font: theme.typography.body.font,
+      })
+      currentLine.width += segment.width
+      // Don't inflate line height — formula is already clamped to lineHeight
+      currentLine.height = Math.max(currentLine.height, segment.height)
+      pendingTrailingBreak = false
       continue
     }
 
@@ -179,22 +215,27 @@ export function layoutInlineRuns(
   return lines
 }
 
-function flattenInlineRuns(runs: InlineNode[], theme: Theme): Array<PreparedSegment | BreakSegment> {
+function flattenInlineRuns(
+  runs: InlineNode[],
+  theme: Theme,
+  renderedMath?: Map<InlineMathNode, RenderedMath>,
+): Array<PreparedSegment | BreakSegment | InlineMathSegment> {
   const baseContext: StyleContext = {
     kind: 'text',
     font: theme.typography.body.font,
     lineHeight: theme.typography.body.lineHeight,
   }
 
-  return flattenInlineNodes(runs, theme, baseContext)
+  return flattenInlineNodes(runs, theme, baseContext, renderedMath)
 }
 
 function flattenInlineNodes(
   runs: InlineNode[],
   theme: Theme,
   context: StyleContext,
-): Array<PreparedSegment | BreakSegment> {
-  const segments: Array<PreparedSegment | BreakSegment> = []
+  renderedMath?: Map<InlineMathNode, RenderedMath>,
+): Array<PreparedSegment | BreakSegment | InlineMathSegment> {
+  const segments: Array<PreparedSegment | BreakSegment | InlineMathSegment> = []
 
   for (const run of runs) {
     switch (run.type) {
@@ -218,7 +259,7 @@ function flattenInlineNodes(
             kind: 'strong',
             font: withFontWeight(context.font, 'bold'),
             lineHeight: context.lineHeight,
-          }),
+          }, renderedMath),
         )
         break
       case 'emphasis':
@@ -227,7 +268,7 @@ function flattenInlineNodes(
             kind: 'emphasis',
             font: withFontStyle(context.font, 'italic'),
             lineHeight: context.lineHeight,
-          }),
+          }, renderedMath),
         )
         break
       case 'inlineCode':
@@ -248,7 +289,7 @@ function flattenInlineNodes(
             kind: 'link',
             font: context.font,
             lineHeight: context.lineHeight,
-          }),
+          }, renderedMath),
         )
         break
       case 'delete':
@@ -257,7 +298,7 @@ function flattenInlineNodes(
             kind: 'delete',
             font: context.font,
             lineHeight: context.lineHeight,
-          }),
+          }, renderedMath),
         )
         break
       case 'inlineImage':
@@ -277,6 +318,21 @@ function flattenInlineNodes(
       case 'break':
         segments.push({ type: 'break' })
         break
+      case 'inlineMath': {
+        const rendered = renderedMath?.get(run)
+        if (rendered) {
+          const dataUri = `data:image/svg+xml;base64,${rendered.svgBuffer.toString('base64')}`
+          segments.push({
+            type: 'inlineMath',
+            url: dataUri,
+            width: rendered.width,
+            height: rendered.height,
+            mathDepth: rendered.depth,
+          })
+        }
+        // If not pre-rendered (e.g. math rendering failed), skip silently
+        break
+      }
     }
   }
 

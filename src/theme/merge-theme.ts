@@ -34,6 +34,7 @@ export function mergeTheme(base: Theme, overrides: ThemeOverrides): Theme {
       quote: { ...base.blocks.quote, ...overrides.blocks?.quote },
       table: { ...base.blocks.table, ...overrides.blocks?.table },
       image: { ...base.blocks.image, ...overrides.blocks?.image },
+      math: { ...base.blocks.math, ...overrides.blocks?.math },
     },
     colors: { ...base.colors, ...overrides.colors },
   }
