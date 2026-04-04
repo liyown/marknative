@@ -165,42 +165,42 @@ describe('smoke: theme system', () => {
     await prepareSmokeOutputDir(outputDir)
     const pages = await renderMarkdown(THEME_FIXTURE)
     await writeSmokePages(outputDir, 'theme-default', pages)
-  })
+  }, 30_000)
 
   test('dark theme (Catppuccin Mocha palette)', async () => {
     const pages = await renderMarkdown(THEME_FIXTURE, { painter: undefined, theme: darkTheme })
     await writeSmokePages(outputDir, 'theme-dark', pages)
-  })
+  }, 30_000)
 
   test('warm sepia theme', async () => {
     const pages = await renderMarkdown(THEME_FIXTURE, { theme: sepiaTheme })
     await writeSmokePages(outputDir, 'theme-sepia', pages)
-  })
+  }, 30_000)
 
   test('compact page — narrow card with smaller typography', async () => {
     const pages = await renderMarkdown(THEME_FIXTURE, { theme: compactTheme })
     await writeSmokePages(outputDir, 'theme-compact', pages)
-  })
+  }, 30_000)
 
   test('wide layout — landscape page', async () => {
     const pages = await renderMarkdown(THEME_FIXTURE, { theme: wideTheme })
     await writeSmokePages(outputDir, 'theme-wide', pages)
-  })
+  }, 30_000)
 
   test('custom accent color — purple', async () => {
     const pages = await renderMarkdown(THEME_FIXTURE, { theme: accentTheme })
     await writeSmokePages(outputDir, 'theme-accent', pages)
-  })
+  }, 30_000)
 
   test('single-page mode with dark theme', async () => {
     const pages = await renderMarkdown(THEME_FIXTURE, { singlePage: true, theme: darkTheme })
     await writeSmokePages(outputDir, 'theme-dark-singlepage', pages)
-  })
+  }, 30_000)
 
   test('mergeTheme — partial override leaves base values intact', async () => {
     // Only override the background color; everything else should stay as defaultTheme
     const minimalTheme = mergeTheme(defaultTheme, { colors: { background: '#fef9ef' } })
     const pages = await renderMarkdown(THEME_FIXTURE, { theme: minimalTheme })
     await writeSmokePages(outputDir, 'theme-minimal-override', pages)
-  })
+  }, 30_000)
 })

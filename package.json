@@ -1,82 +1,21 @@
 {
-  "name": "marknative",
-  "version": "0.4.0",
-  "description": "Native Markdown rendering engine — produces paginated PNG/SVG documents without a browser",
-  "license": "MIT",
-  "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "bin": {
-    "marknative": "./dist/cli.js"
-  },
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist"
+  "name": "marknative-workspace",
+  "private": true,
+  "workspaces": [
+    "packages/*"
   ],
-  "keywords": [
-    "markdown",
-    "render",
-    "png",
-    "svg",
-    "pdf",
-    "layout",
-    "pagination",
-    "commonmark",
-    "gfm",
-    "headless",
-    "server-side"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/liyown/marknative.git"
-  },
-  "homepage": "https://github.com/liyown/marknative#readme",
-  "bugs": {
-    "url": "https://github.com/liyown/marknative/issues"
-  },
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target node --format esm --external '@chenglou/pretext' --external 'mdast-util-from-markdown' --external 'mdast-util-gfm' --external 'micromark' --external 'micromark-extension-gfm' --external 'skia-canvas' --external 'shiki' && bun build src/cli.ts --outdir dist --target node --format esm --external 'marknative' && bunx tsc -p tsconfig.build.json && bun scripts/postbuild.ts",
-    "typecheck": "bunx tsc --noEmit",
-    "test": "bun test",
-    "prepublishOnly": "bun run typecheck && bun run test && bun run build",
-    "bench": "bun bench/perf.ts",
-    "docs:examples": "bun scripts/generate-all-examples.ts",
-    "docs:dev": "bun run docs:examples && vitepress dev docs",
-    "docs:build": "bun run docs:examples && vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "build": "bun run --filter 'marknative' build",
+    "typecheck": "bun run --filter 'marknative' typecheck",
+    "test": "bun --cwd packages/marknative test",
+    "bench": "bun run --filter 'marknative' bench",
+    "docs:dev": "bun --cwd packages/marknative-docs run dev",
+    "docs:build": "bun --cwd packages/marknative-docs run build",
+    "docs:preview": "bun --cwd packages/marknative-docs run preview"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "vitepress": "^1.6.4",
-    "vitepress-plugin-tabs": "^0.8.0"
-  },
-  "peerDependencies": {
+    "bun-types": "latest",
     "typescript": "^5"
-  },
-  "peerDependenciesMeta": {
-    "typescript": {
-      "optional": true
-    }
-  },
-  "dependencies": {
-    "@chenglou/pretext": "^0.0.3",
-    "mathjax-full": "^3.2.2",
-    "mdast-util-from-markdown": "^2.0.0",
-    "mdast-util-gfm": "^3.0.0",
-    "mdast-util-math": "^3.0.0",
-    "micromark": "^4.0.0",
-    "micromark-extension-gfm": "^3.0.0",
-    "micromark-extension-math": "^3.1.0",
-    "shiki": "^4.0.2",
-    "skia-canvas": "^2.0.0"
-  },
-  "engines": {
-    "node": ">=18"
   }
 }

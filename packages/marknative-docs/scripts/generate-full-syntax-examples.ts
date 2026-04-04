@@ -8,10 +8,10 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
-import { renderMarkdown } from '../src'
-import { FULL_SYNTAX_CODE_HIGHLIGHT_THEME, FULL_SYNTAX_MARKDOWN } from '../src/examples/full-syntax'
+import { renderMarkdown } from '../../marknative/src/index.ts'
+import { FULL_SYNTAX_CODE_HIGHLIGHT_THEME, FULL_SYNTAX_MARKDOWN } from '../../marknative/src/examples/full-syntax'
 
-const OUT = resolve(import.meta.dir, '..', 'docs', 'public', 'examples', 'full-syntax')
+const OUT = resolve(import.meta.dir, '..', 'public', 'examples', 'full-syntax')
 await mkdir(OUT, { recursive: true })
 
 const pages = await renderMarkdown(FULL_SYNTAX_MARKDOWN, {

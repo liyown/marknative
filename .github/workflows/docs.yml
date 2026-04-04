@@ -41,17 +41,14 @@ jobs:
       - name: Rebuild skia-canvas for Linux
         run: cd node_modules/skia-canvas && npx node-pre-gyp install --fallback-to-build=false
 
-      - name: Generate example images
-        run: bun run docs:examples
-
       - name: Build docs
-        run: bunx vitepress build docs
+        run: bun run docs:build
 
       - name: Upload Pages artifact
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/.vitepress/dist
+          path: packages/marknative-docs/.vitepress/dist
 
   deploy:
     if: github.ref == 'refs/heads/main'

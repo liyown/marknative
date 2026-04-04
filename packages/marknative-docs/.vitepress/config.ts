@@ -20,8 +20,15 @@ export default defineConfig({
 
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
-      { text: 'Showcase', link: '/showcase/syntax' },
       { text: 'API', link: '/api/reference' },
+      { text: 'Showcase', link: '/showcase/syntax' },
+      {
+        text: 'npm',
+        items: [
+          { text: 'marknative', link: 'https://www.npmjs.com/package/marknative' },
+          { text: 'marknative-skill', link: 'https://www.npmjs.com/package/marknative-skill' },
+        ],
+      },
       {
         text: 'Changelog',
         link: 'https://github.com/liyown/marknative/releases',
@@ -31,14 +38,25 @@ export default defineConfig({
     sidebar: {
       '/guide/': [
         {
-          text: 'Guide',
+          text: 'Introduction',
           items: [
             { text: 'Getting Started', link: '/guide/getting-started' },
+            { text: 'CLI Reference', link: '/guide/cli' },
+          ],
+        },
+        {
+          text: 'Features',
+          items: [
             { text: 'Render Options', link: '/guide/options' },
-            { text: 'Single-Page Mode', link: '/guide/single-page' },
-            { text: 'Image Rendering', link: '/guide/images' },
             { text: 'Themes', link: '/guide/themes' },
             { text: 'Math Rendering', link: '/guide/math' },
+            { text: 'Image Rendering', link: '/guide/images' },
+            { text: 'Single-Page Mode', link: '/guide/single-page' },
+          ],
+        },
+        {
+          text: 'Advanced',
+          items: [
             { text: 'Performance', link: '/guide/performance' },
           ],
         },
@@ -46,7 +64,10 @@ export default defineConfig({
       '/api/': [
         {
           text: 'API Reference',
-          items: [{ text: 'API Reference', link: '/api/reference' }],
+          items: [{ text: 'renderMarkdown', link: '/api/reference#rendermarkdown' },
+                  { text: 'RenderMarkdownOptions', link: '/api/reference#rendermarkdownoptions' },
+                  { text: 'RenderPage', link: '/api/reference#renderpage' },
+                  { text: 'Theme API', link: '/api/reference#mergetheme' }],
         },
       ],
       '/showcase/': [
@@ -109,7 +130,7 @@ export default defineConfig({
     search: { provider: 'local' },
 
     editLink: {
-      pattern: 'https://github.com/liyown/marknative/edit/main/docs/:path',
+      pattern: 'https://github.com/liyown/marknative/edit/main/packages/marknative-docs/:path',
       text: 'Edit this page on GitHub',
     },
   },

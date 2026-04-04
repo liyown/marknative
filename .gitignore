@@ -1,18 +1,20 @@
-# dependencies (bun install)
+# dependencies
 node_modules
 
-# output
+# build output
 out
 dist
 *.tgz
-references
 *.lcov
+
+# references (git submodule / external)
+references
 
 # logs
 logs
-_.log
+*.log
 
-# dotenv environment variable files
+# dotenv
 .env
 .env.development.local
 .env.test.local
@@ -24,20 +26,22 @@ _.log
 .cache
 *.tsbuildinfo
 
-# IntelliJ based IDEs
+# IDEs
 .idea
-
-# Finder (MacOS) folder config
-.DS_Store
-
-# Editor
 .cursor
 
-# smoke test output
-smoke-output.png
-out-*.png
+# macOS
+.DS_Store
+
+# git worktrees
 .worktrees
+
+# smoke test output (generated during test runs)
 tests/smoke/output/
-docs/.vitepress/dist
-docs/public/examples/
-docs/.vitepress/cache
+packages/marknative/tests/smoke/output/
+packages/marknative/tests/smoke/images/fixtures/
+
+# VitePress build artifacts (generated)
+**/.vitepress/dist
+**/.vitepress/cache
+packages/marknative-docs/public/examples/

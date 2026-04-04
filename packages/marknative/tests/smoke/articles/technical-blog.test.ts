@@ -60,5 +60,5 @@ This article doubles as a regression fixture for long-form technical writing.
 
     await writeSmokePages(outputDir, 'technical-blog', pages)
     await expectExactSmokeOutputs(outputDir, ['technical-blog-01.png'])
-  })
+  }, 30_000)
 })

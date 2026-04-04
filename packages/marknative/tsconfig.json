@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "marknative": ["./src/index.ts"]
+    }
+  },
+  "include": ["src", "tests", "scripts", "bench"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -8,10 +8,10 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
-import { BUILT_IN_THEME_NAMES, mergeTheme, renderMarkdown, defaultTheme } from '../src'
-import type { BuiltInThemeName } from '../src'
+import { BUILT_IN_THEME_NAMES, mergeTheme, renderMarkdown, defaultTheme } from '../../marknative/src/index.ts'
+import type { BuiltInThemeName } from '../../marknative/src/index.ts'
 
-const OUT = resolve(import.meta.dir, '..', 'docs', 'public', 'examples', 'themes')
+const OUT = resolve(import.meta.dir, '..', 'public', 'examples', 'themes')
 await mkdir(OUT, { recursive: true })
 
 async function save(name: string, data: Buffer): Promise<void> {

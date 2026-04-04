@@ -8,9 +8,9 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
-import { renderMarkdown } from '../src'
+import { renderMarkdown } from '../../marknative/src/index.ts'
 
-const OUT = resolve(import.meta.dir, '..', 'docs', 'public', 'examples', 'syntax')
+const OUT = resolve(import.meta.dir, '..', 'public', 'examples', 'syntax')
 await mkdir(OUT, { recursive: true })
 
 async function save(

@@ -8,9 +8,9 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
-import { mergeTheme, renderMarkdown } from '../src'
+import { mergeTheme, renderMarkdown } from '../../marknative/src/index.ts'
 
-const OUT = resolve(import.meta.dir, '..', 'docs', 'public', 'examples', 'features')
+const OUT = resolve(import.meta.dir, '..', 'public', 'examples', 'features')
 await mkdir(OUT, { recursive: true })
 
 async function save(name: string, data: Buffer): Promise<void> {
@@ -97,7 +97,7 @@ await save('single-page', singleBuf!)
 // ─── Custom page width (narrow) ─────────────────────────────────────────────
 
 const narrowTheme = mergeTheme(
-  (await import('../src')).defaultTheme,
+  (await import('../../marknative/src/index.ts')).defaultTheme,
   { page: { width: 480 } },
 )
 
@@ -120,7 +120,7 @@ await save('custom-width', narrowBuf!)
 // ─── Custom page size (tall / portrait) ─────────────────────────────────────
 
 const tallTheme = mergeTheme(
-  (await import('../src')).defaultTheme,
+  (await import('../../marknative/src/index.ts')).defaultTheme,
   { page: { width: 600, height: 1200 } },
 )
 

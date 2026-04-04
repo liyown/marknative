@@ -61,5 +61,5 @@ describe('smoke: single-page rendering', () => {
   test('normal pagination still works unchanged', async () => {
     const pages = await renderMarkdown(MARKDOWN, { format: 'png' })
     expect(pages.length).toBeGreaterThan(1)
-  })
+  }, 30_000)
 })

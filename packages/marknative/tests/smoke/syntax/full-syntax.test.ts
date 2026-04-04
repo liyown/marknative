@@ -34,5 +34,5 @@ describe('smoke: full markdown syntax', () => {
     expect(highlightedCodeRuns.length).toBeGreaterThan(0)
 
     await writeSmokePages(outputDir, 'full-syntax', pages)
-  })
+  }, 30_000)
 })

@@ -1,0 +1,20 @@
+{
+  "name": "marknative-docs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "examples": "bun scripts/generate-all-examples.ts",
+    "dev": "bun run examples && vitepress dev",
+    "build": "bun run examples && vitepress build",
+    "preview": "vitepress preview"
+  },
+  "dependencies": {
+    "marknative": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "vitepress": "^1.6.4",
+    "vitepress-plugin-tabs": "^0.8.0"
+  }
+}

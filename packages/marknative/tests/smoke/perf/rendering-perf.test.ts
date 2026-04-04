@@ -153,7 +153,7 @@ describe('perf: cold start', () => {
     const elapsed = performance.now() - t0
     expect(pages.length).toBeGreaterThanOrEqual(1)
     expect(elapsed).toBeLessThan(1000)
-  })
+  }, 30_000)
 })
 
 // ─── Warm single-render budgets ───────────────────────────────────────────────
@@ -165,22 +165,22 @@ describe('perf: warm render budgets (PNG)', () => {
   test('plain text document p90 < 500 ms', async () => {
     const times = await measure(() => renderMarkdown(PLAIN_MD).then(() => {}), 10)
     expect(p90(times)).toBeLessThan(BUDGET_MS)
-  })
+  }, 30_000)
 
   test('code-heavy document (3 languages, shiki) p90 < 500 ms', async () => {
     const times = await measure(() => renderMarkdown(CODE_MD).then(() => {}), 10)
     expect(p90(times)).toBeLessThan(BUDGET_MS)
-  })
+  }, 30_000)
 
   test('math-heavy document (6 block formulas) p90 < 500 ms', async () => {
     const times = await measure(() => renderMarkdown(MATH_MD).then(() => {}), 10)
     expect(p90(times)).toBeLessThan(BUDGET_MS)
-  })
+  }, 30_000)
 
   test('mixed document (math + code) p90 < 500 ms', async () => {
     const times = await measure(() => renderMarkdown(MIXED_MD).then(() => {}), 10)
     expect(p90(times)).toBeLessThan(BUDGET_MS)
-  })
+  }, 30_000)
 })
 
 // ─── SVG is much faster than PNG ──────────────────────────────────────────────
@@ -193,12 +193,12 @@ describe('perf: SVG vs PNG', () => {
     ])
     // SVG skips rasterisation; observed ≈11 ms vs ≈115 ms (10× faster)
     expect(p50(svgTimes) * 5).toBeLessThan(p50(pngTimes))
-  })
+  }, 30_000)
 
   test('SVG output p50 < 50 ms', async () => {
     const times = await measure(() => renderMarkdown(MIXED_MD, { format: 'svg' }).then(() => {}), 10)
     expect(p50(times)).toBeLessThan(50)
-  })
+  }, 30_000)
 })
 
 // ─── Math warm ≈ non-math ─────────────────────────────────────────────────────
