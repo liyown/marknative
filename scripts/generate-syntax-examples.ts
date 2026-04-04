@@ -163,4 +163,21 @@ ___
 All three render identically as a horizontal rule.
 `)
 
+await save('math', `## Math
+
+Block formulas:
+
+$$
+\\int_a^b f'(x)\\,dx = f(b) - f(a)
+$$
+
+$$
+p(\\mathbf{x}) = \\frac{1}{(2\\pi)^{d/2}|\\Sigma|^{1/2}}
+\\exp\\!\\left(-\\tfrac{1}{2}(\\mathbf{x}-\\boldsymbol{\\mu})^T\\Sigma^{-1}(\\mathbf{x}-\\boldsymbol{\\mu})\\right)
+$$
+
+Inline: the gradient $\\nabla f$, entropy $H(X) = -\\sum p \\log p$,
+and norm $\\|\\mathbf{x}\\|_2 = \\sqrt{\\sum x_i^2}$.
+`)
+
 console.log('✓ all syntax examples generated')

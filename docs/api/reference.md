@@ -49,9 +49,10 @@ type RenderMarkdownOptions = {
   format?: 'png' | 'svg'
   singlePage?: boolean
   theme?: BuiltInThemeName | ThemeOverrides
+  scale?: number
   painter?: Painter
   codeHighlighting?: {
-    theme?: string  // Shiki theme name — default: 'github-light'
+    theme?: string  // Shiki theme name — auto-detected from page background if omitted
   }
 }
 ```
@@ -93,30 +94,41 @@ await renderMarkdown(md, { theme: 'dracula' })
 await renderMarkdown(md, { theme: { colors: { background: '#000' } } })
 ```
 
+#### `scale`
+
+**Type:** `number`  
+**Default:** `2`  
+**Applies to:** PNG output only
+
+Pixel density multiplier. The logical page width/height from the active theme are multiplied by this value to determine the physical canvas resolution. Higher values produce sharper images at the cost of larger files and longer encode times (PNG compression scales with pixel count).
+
+```ts
+await renderMarkdown(md, { scale: 1 })   // ~29 ms — preview
+await renderMarkdown(md, { scale: 2 })   // ~99 ms — retina (default)
+await renderMarkdown(md, { scale: 3 })   // ~214 ms — print
+```
+
 #### `codeHighlighting`
 
 **Type:** `{ theme?: string }`  
-**Default:** `{ theme: 'github-light' }`
+**Default:** auto-detected from page background luminance
 
 Controls syntax highlighting for fenced code blocks. Highlighting is powered by [Shiki](https://shiki.style/) and runs server-side before layout.
 
-- `theme` — any Shiki-supported theme name (e.g. `'github-dark'`, `'nord'`, `'one-dark-pro'`, `'dracula'`). Defaults to `'github-light'`.
+- `theme` — any Shiki-supported theme name (e.g. `'github-dark'`, `'nord'`, `'one-dark-pro'`, `'dracula'`). When omitted, the theme is auto-selected: light page backgrounds use `'github-light'`, dark page backgrounds use `'github-dark'`.
 - Code blocks with an **unknown or missing language tag** fall back to plain monochrome text — no `codeToken` runs are produced.
 
 ```ts
-// Default (github-light)
-const pages = await renderMarkdown(md, { format: 'png' })
+// Auto-detection: light page → github-light
+const pages = await renderMarkdown(md)
 
-// Switch to a dark Shiki theme — combine with a dark marknative theme
-const pages = await renderMarkdown(md, {
-  format: 'png',
-  theme: 'dark',
-  codeHighlighting: { theme: 'github-dark' },
-})
+// Auto-detection: dark page → github-dark
+const pages = await renderMarkdown(md, { theme: 'dark' })
 
-// Nord palette
+// Explicit override
 const pages = await renderMarkdown(md, {
-  codeHighlighting: { theme: 'nord' },
+  theme: 'nord',
+  codeHighlighting: { theme: 'one-dark-pro' },
 })
 ```
 

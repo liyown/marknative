@@ -7,7 +7,8 @@ const pages = await renderMarkdown(markdown, {
   format: 'png',                          // 'png' | 'svg'
   singlePage: false,                      // render into one image instead of paginating
   theme: 'dark',                          // built-in theme name or ThemeOverrides object
-  codeHighlighting: { theme: 'nord' },    // Shiki theme for fenced code blocks
+  scale: 2,                               // PNG pixel density multiplier (default: 2)
+  codeHighlighting: { theme: 'nord' },    // Shiki theme — auto-detected if omitted
 })
 ```
 
@@ -94,35 +95,70 @@ const pages = await renderMarkdown(markdown, { theme: myTheme })
 
 See the [Themes guide](/guide/themes) for the complete reference.
 
+## `scale`
+
+**Type:** `number`  
+**Default:** `2`  
+**Applies to:** PNG output only (`format: 'png'`)
+
+Pixel density multiplier for the rasterised PNG output. The logical page dimensions (from `theme.page`) are multiplied by this factor to produce the physical canvas size.
+
+| Value | Physical resolution | Encode time | Use case |
+| :--- | :--- | ---: | :--- |
+| `1` | 1080 × 1440 px | ~29 ms | Fast preview / drafts |
+| `1.5` | 1620 × 2160 px | ~58 ms | Balanced |
+| **`2`** | **2160 × 2880 px** | **~99 ms** | **Retina (default)** |
+| `3` | 3240 × 4320 px | ~214 ms | Print / high-DPI |
+
+PNG encode time scales with pixel count (proportional to `scale²`). SVG output is unaffected by this option.
+
+```ts
+// Fast preview
+const pages = await renderMarkdown(md, { scale: 1 })
+
+// Default retina quality
+const pages = await renderMarkdown(md)                  // scale: 2 implicit
+const pages = await renderMarkdown(md, { scale: 2 })    // same
+
+// Print quality
+const pages = await renderMarkdown(md, { scale: 3 })
+```
+
+See [Performance](/guide/performance) for a full breakdown of encode costs at each scale.
+
 ## `codeHighlighting`
 
 **Type:** `{ theme?: string }`  
-**Default:** `{ theme: 'github-light' }`
+**Default:** auto-detected from page background
 
 Enables syntax highlighting for fenced code blocks, powered by [Shiki](https://shiki.style/).
 
 | Sub-option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `theme` | `string` | `'github-light'` | Any Shiki-supported theme name |
+| `theme` | `string` | auto | Any Shiki-supported theme name |
 
-Shiki is loaded lazily on first use — there is no extra overhead when no code blocks are present.
+**Auto-detection:** when `theme` is omitted, marknative selects a Shiki theme based on the WCAG relative luminance of the page background color:
 
-**Default (github-light):**
+- Light page background → `'github-light'`
+- Dark page background → `'github-dark'`
+
+This means dark marknative themes (`'dark'`, `'nord'`, `'dracula'`, `'ocean'`, `'forest'`) automatically produce legible dark code highlighting — no extra configuration needed.
 
 ```ts
+// Auto-detected (light → github-light)
 const pages = await renderMarkdown(md)
-// codeHighlighting: { theme: 'github-light' } is the implicit default
-```
 
-**Dark theme pairing** — combine a dark marknative theme with a matching Shiki theme:
+// Auto-detected (dark → github-dark)
+const pages = await renderMarkdown(md, { theme: 'dark' })
 
-```ts
+// Override explicitly
 const pages = await renderMarkdown(md, {
-  format: 'png',
-  theme: 'dark',
-  codeHighlighting: { theme: 'github-dark' },
+  theme: 'nord',
+  codeHighlighting: { theme: 'one-dark-pro' },
 })
 ```
+
+Shiki is loaded lazily on first use — there is no overhead when no code blocks are present.
 
 **Popular Shiki theme names:**
 

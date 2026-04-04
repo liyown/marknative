@@ -143,4 +143,84 @@ space available before creating a new page.
 )
 await save('custom-height', tallBuf!)
 
+// ─── Math rendering ──────────────────────────────────────────────────────────
+
+const [mathBuf] = await png(
+  `# Math Rendering
+
+Block formula:
+
+$$
+\\hat{f}(\\xi) = \\int_{-\\infty}^{\\infty} f(x)\\,e^{-2\\pi ix\\xi}\\,dx
+$$
+
+$$
+D_{\\mathrm{KL}}(P\\|Q) = \\int p(x)\\log\\frac{p(x)}{q(x)}\\,dx
+$$
+
+The KL divergence $D_{\\mathrm{KL}}(P\\|Q) \\geq 0$ (Gibbs' inequality).
+Gradient: $\\nabla f = \\left(\\frac{\\partial f}{\\partial x_1}, \\ldots, \\frac{\\partial f}{\\partial x_n}\\right)$.
+
+Mixed with code:
+
+\`\`\`python
+import numpy as np
+def dft(x):
+    N, n = len(x), np.arange(len(x))
+    return np.exp(-2j * np.pi * n.reshape(N,1) * n / N) @ x
+\`\`\`
+
+Complexity: $O(N^2)$ naïve, $O(N\\log N)$ FFT.
+`,
+  { singlePage: true },
+)
+await save('math', mathBuf!)
+
+// ─── PNG scale 1 vs 2 ────────────────────────────────────────────────────────
+
+const SCALE_MD = `# PNG Resolution
+
+The \`scale\` option controls pixel density for PNG output.
+
+- \`scale: 1\` — 1080 × 1440 px, ~29 ms/page
+- \`scale: 2\` — 2160 × 2880 px, ~99 ms/page (default)
+- \`scale: 3\` — 3240 × 4320 px, ~214 ms/page
+
+Use \`scale: 1\` for fast previews; \`scale: 2\` for retina output.
+`
+
+const [scale1Buf] = await png(SCALE_MD, { scale: 1, singlePage: true })
+await save('scale-1', scale1Buf!)
+
+const [scale2Buf] = await png(SCALE_MD, { scale: 2, singlePage: true })
+await save('scale-2', scale2Buf!)
+
+// ─── Code highlighting: light and dark ───────────────────────────────────────
+
+const CODE_MD = `# Syntax Highlighting
+
+\`\`\`typescript
+import { renderMarkdown } from 'marknative'
+
+const pages = await renderMarkdown(markdown, { theme: 'dark' })
+
+for (const [i, page] of pages.entries()) {
+  writeFileSync(\`page-\${i + 1}.png\`, page.data)
+}
+\`\`\`
+
+\`\`\`python
+import numpy as np
+
+def create_matrix(n: int) -> np.ndarray:
+    return np.array([[1 / (i + j + 1) for j in range(n)] for i in range(n)])
+\`\`\`
+`
+
+const [codeLightBuf] = await png(CODE_MD, { singlePage: true })
+await save('code-light', codeLightBuf!)
+
+const [codeDarkBuf] = await png(CODE_MD, { theme: 'dark', singlePage: true })
+await save('code-dark', codeDarkBuf!)
+
 console.log('✓ all feature examples generated')

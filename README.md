@@ -4,6 +4,8 @@
 
 **A native Markdown rendering engine that produces paginated PNG/SVG documents — no browser, no Chromium, no DOM.**
 
+Supports CommonMark, GFM (tables, task lists, strikethrough), syntax-highlighted code blocks (Shiki), and LaTeX math formulas (MathJax) — all rendered server-side.
+
 📖 **[Documentation](https://liyown.github.io/marknative/)** — Guide · Showcase · API Reference
 
 Most Markdown rendering pipelines go through a browser:
@@ -19,6 +21,12 @@ The result is deterministic, server-renderable, and completely headless.
 ---
 
 ## Gallery
+
+Math formulas (MathJax block + inline) mixed with syntax-highlighted code:
+
+<p align="center">
+  <img src="https://liyown.github.io/marknative/examples/features/math.png" alt="Math rendering example" width="60%" />
+</p>
 
 Full syntax fixture, rendered across 10 pages with syntax-highlighted fenced code blocks:
 
@@ -54,6 +62,8 @@ Full syntax fixture, rendered across 10 pages with syntax-highlighted fenced cod
 | Runs on the server without a browser | ✗ | ✓ |
 | Deterministic page breaks across runs | ✗ | ✓ |
 | Direct PNG / SVG output | ✗ | ✓ |
+| LaTeX math formulas (server-side MathJax) | ✗ | ✓ |
+| Syntax-highlighted code blocks (Shiki) | ✗ | ✓ |
 | Batch rendering at scale | slow | fast |
 | Embeddable as a library | heavy | lightweight |
 
@@ -111,9 +121,10 @@ function renderMarkdown(
     format?: 'png' | 'svg'                      // default: 'png'
     singlePage?: boolean                         // render into one image instead of paginating
     theme?: BuiltInThemeName | ThemeOverrides    // default: defaultTheme
+    scale?: number                               // PNG pixel density multiplier — default: 2 (retina)
     painter?: Painter                            // override the paint backend
     codeHighlighting?: {
-      theme?: string                             // Shiki theme — default: 'github-light'
+      theme?: string                             // Shiki theme — auto-detected from page background
     }
   },
 ): Promise<RenderPage[]>
@@ -216,6 +227,52 @@ See the [Themes guide](https://liyown.github.io/marknative/guide/themes) and [Th
 
 ---
 
+## Performance
+
+Benchmarks run on Apple M-series (warm, singletons already initialised). Run `bun bench/perf.ts` to reproduce.
+
+### Throughput by document type — PNG 2× (default)
+
+| Document type | mean | p50 | p90 |
+| --- | ---: | ---: | ---: |
+| Plain text (prose + lists + blockquotes) | 116 ms | 115 ms | 120 ms |
+| Code-heavy (3 languages, shiki) | 101 ms | 101 ms | 104 ms |
+| Math-heavy (4 block + 3 inline formulas) | 100 ms | 99 ms | 103 ms |
+| Mixed (math + code) | 98 ms | 97 ms | 100 ms |
+
+### Output format — mixed doc
+
+| Format | mean | p50 | p90 | note |
+| --- | ---: | ---: | ---: | --- |
+| SVG | 5.6 ms | 5.6 ms | 6.5 ms | layout + serialize only |
+| PNG 2× | 99 ms | 98 ms | 102 ms | full rasterize + encode |
+
+SVG is ~17× faster than PNG. `canvas.toBuffer('png')` (pure CPU PNG compression) accounts for **94% of PNG render time**; all parsing, layout, and drawing are <8 ms/page.
+
+### Scale factor — mixed doc, PNG only
+
+| Scale | Resolution | mean |
+| --- | --- | ---: |
+| 1 | 1080 × ~650 (0.7 MP) | 29 ms |
+| 1.5 | 1620 × ~975 (1.6 MP) | 58 ms |
+| **2** (default) | **2160 × ~1300 (2.8 MP)** | **99 ms** |
+| 3 | 3240 × ~1950 (6.3 MP) | 214 ms |
+
+PNG encode time scales linearly with pixel count. Use `scale: 1` for previews, `scale: 2` for retina output.
+
+### Concurrency — plain doc, PNG 2×
+
+| Mode | mean per batch |
+| --- | ---: |
+| 1× sequential | 118 ms |
+| 2× parallel | 127 ms |
+| 4× parallel | 192 ms |
+| 8× parallel | 363 ms |
+
+Parallel renders share CPU resources; throughput scales near-linearly up to core count.
+
+---
+
 ## Rendering Pipeline
 
 ```
@@ -267,6 +324,15 @@ Each stage is independently testable. The layout engine has no dependency on the
 | Tables (with alignment) | ✓ |
 | Task lists | ✓ |
 | ~~Strikethrough~~ | ✓ |
+
+### Math (LaTeX via MathJax)
+
+| Element | Support |
+| --- | :---: |
+| Block formulas `$$...$$` | ✓ |
+| Inline formulas `$...$` | ✓ |
+| Math in blockquotes / lists / tables | ✓ |
+| AMSmath, boldsymbol, mathtools | ✓ |
 
 ---
 
@@ -326,26 +392,58 @@ for (const page of pages) {
 }
 ```
 
+### Math formulas
+
+Block and inline LaTeX — rendered server-side via MathJax, no browser required. Formula colors follow the active theme automatically.
+
+```ts
+const pages = await renderMarkdown(`
+## Fourier Transform
+
+$$
+\\hat{f}(\\xi) = \\int_{-\\infty}^{\\infty} f(x)\\,e^{-2\\pi ix\\xi}\\,dx
+$$
+
+The gradient $\\nabla f$ points in the direction of steepest ascent.
+Entropy: $H(X) = -\\sum p \\log p$.
+
+\`\`\`python
+import numpy as np
+def dft(x):
+    N, n = len(x), np.arange(len(x))
+    return np.exp(-2j * np.pi * n.reshape(N,1) * n / N) @ x
+\`\`\`
+
+Complexity: $O(N^2)$ naïve, $O(N\\log N)$ with FFT.
+`)
+```
+
+MathJax is initialised lazily on first use (~180 ms cold start). All subsequent renders reuse the singleton and cached SVGs — warm overhead is < 2 ms.
+
+See the [Math guide](https://liyown.github.io/marknative/guide/math) for the full reference.
+
 ### Syntax highlighting for code blocks
 
 ```ts
-// Light theme (default — github-light)
+// Auto-detected from page background (light → github-light, dark → github-dark)
 const pages = await renderMarkdown(markdown)
+const pages = await renderMarkdown(markdown, { theme: 'dark' })   // uses github-dark automatically
 
-// Pair a dark marknative theme with a matching Shiki theme
-const pages = await renderMarkdown(markdown, {
-  format: 'png',
-  theme: 'dark',
-  codeHighlighting: { theme: 'github-dark' },
-})
-
-// Nord palette
+// Override the Shiki theme explicitly
 const pages = await renderMarkdown(markdown, {
   codeHighlighting: { theme: 'nord' },
 })
 ```
 
-Code blocks without a language tag fall back to plain monochrome text automatically.
+The Shiki theme is auto-selected based on the WCAG relative luminance of the page background — dark page themes automatically get a dark code theme. Code blocks without a language tag fall back to plain monochrome text.
+
+### Control PNG resolution with `scale`
+
+```ts
+const pages = await renderMarkdown(markdown, { scale: 1 })   // ~29 ms/page — fast preview
+const pages = await renderMarkdown(markdown, { scale: 2 })   // ~99 ms/page — retina (default)
+const pages = await renderMarkdown(markdown, { scale: 3 })   // ~214 ms/page — print quality
+```
 
 ---
 
@@ -355,6 +453,7 @@ Code blocks without a language tag fall back to plain monochrome text automatica
 | --- | --- |
 | Markdown parsing | [`micromark`](https://github.com/micromark/micromark) + [`mdast-util-from-markdown`](https://github.com/syntax-tree/mdast-util-from-markdown) |
 | GFM extensions | [`micromark-extension-gfm`](https://github.com/micromark/micromark-extension-gfm) + [`mdast-util-gfm`](https://github.com/syntax-tree/mdast-util-gfm) |
+| Math rendering | [`mathjax-full`](https://github.com/mathjax/MathJax-src) (server-side SVG, liteAdaptor) |
 | Syntax highlighting | [`shiki`](https://shiki.style/) |
 | Text shaping | [`@chenglou/pretext`](https://github.com/chenglou/pretext) |
 | 2D rendering | [`skia-canvas`](https://github.com/samizdatco/skia-canvas) |
@@ -366,8 +465,10 @@ Code blocks without a language tag fall back to plain monochrome text automatica
 
 - [ ] Improve paragraph line-breaking quality for English prose
 - [ ] Refine CJK and mixed Chinese-English line-breaking rules
-- [x] Syntax highlighting for code blocks (Shiki, all themes)
+- [x] Syntax highlighting for code blocks (Shiki, all themes, auto-detected from theme)
+- [x] LaTeX math rendering (MathJax, block + inline, all block types)
 - [x] Expose public theme and page configuration API
+- [x] PNG resolution control (`scale` option)
 - [ ] Support custom fonts
 - [ ] Complete GFM coverage (footnotes, autolinks)
 

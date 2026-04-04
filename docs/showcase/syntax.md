@@ -178,6 +178,31 @@ Below
 ![Thematic break rendered output](/examples/syntax/thematic-break.png)
 :::
 
+## Math
+
+Block display formulas (`$$...$$`) and inline formulas (`$...$`) rendered via MathJax.
+
+:::tabs
+== Markdown
+```markdown
+Block formula:
+
+$$
+\int_a^b f'(x)\,dx = f(b) - f(a)
+$$
+
+$$
+p(\mathbf{x}) = \frac{1}{(2\pi)^{d/2}|\Sigma|^{1/2}}
+\exp\!\left(-\tfrac{1}{2}(\mathbf{x}-\boldsymbol{\mu})^T\Sigma^{-1}(\mathbf{x}-\boldsymbol{\mu})\right)
+$$
+
+Inline: the gradient $\nabla f$, entropy $H(X) = -\sum p \log p$,
+and norm $\|\mathbf{x}\|_2 = \sqrt{\sum x_i^2}$.
+```
+== Rendered
+![Math rendered output](/examples/syntax/math.png)
+:::
+
 ## Full Syntax Fixture
 
 The complete multi-page fixture combines every supported Markdown element in one render, including syntax-highlighted fenced code blocks.
