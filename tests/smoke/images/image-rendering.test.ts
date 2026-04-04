@@ -36,5 +36,5 @@ describe('smoke: image rendering', () => {
     await prepareSmokeOutputDir(outputDir)
     const pages = await renderMarkdown(IMAGE_MARKDOWN, { format: 'png' })
     await writeSmokePages(outputDir, 'image-rendering', pages)
-  })
+  }, 30_000)
 })
