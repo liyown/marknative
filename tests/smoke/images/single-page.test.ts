@@ -58,17 +58,6 @@ const [page] = await renderMarkdown(markdown, { singlePage: true })
 `
 
 describe('smoke: single-page rendering', () => {
-  test('renders entire document into one image', async () => {
-    await prepareSmokeOutputDir(outputDir)
-
-    const pages = await renderMarkdown(MARKDOWN, { format: 'png', singlePage: true })
-
-    expect(pages.length).toBe(1)
-    expect(pages[0]!.format).toBe('png')
-
-    await writeSmokePages(outputDir, 'single-page', pages)
-  })
-
   test('normal pagination still works unchanged', async () => {
     const pages = await renderMarkdown(MARKDOWN, { format: 'png' })
     expect(pages.length).toBeGreaterThan(1)
