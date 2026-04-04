@@ -39,7 +39,9 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Rebuild skia-canvas for Linux
-        run: cd node_modules/skia-canvas && npx node-pre-gyp install --fallback-to-build=false
+        run: |
+          SKIA=$(node -e "const p=require('path');const m=require('module');const r=m.createRequire(p.join(process.cwd(),'packages/marknative/package.json'));console.log(r.resolve('skia-canvas/package.json').replace('/package.json',''))")
+          cd "$SKIA" && npx node-pre-gyp install --fallback-to-build=false
 
       - name: Build docs
         run: bun run docs:build
