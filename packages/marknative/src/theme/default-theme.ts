@@ -93,7 +93,7 @@ export type Theme = {
     paragraph: { marginBottom: number }
     heading: { marginTop: number; marginBottom: number }
     list: { marginBottom: number; itemGap: number; indent: number }
-    code: { marginBottom: number; padding: number }
+    code: { marginBottom: number; padding: number, width: number | string }
     quote: { marginBottom: number; padding: number }
     table: { marginBottom: number; cellPadding: number }
     image: { marginBottom: number }
@@ -143,7 +143,7 @@ export const defaultTheme: Theme = {
     paragraph: { marginBottom: 24 },
     heading: { marginTop: 40, marginBottom: 12 },
     list: { marginBottom: 24, itemGap: 8, indent: 36 },
-    code: { marginBottom: 24, padding: 24 },
+    code: { marginBottom: 24, padding: 24, width: '100%' },
     quote: { marginBottom: 16, padding: 12 },
     table: { marginBottom: 24, cellPadding: 16 },
     image: { marginBottom: 24 },
