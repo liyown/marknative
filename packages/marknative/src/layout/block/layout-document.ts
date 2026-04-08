@@ -225,6 +225,25 @@ function layoutList(node: ListNode, context: LayoutContext): LayoutResult<ListFr
   }
 }
 
+function parseWidth(width: number | string, containerWidth: number): number {
+  if (typeof width === 'number') {
+    return width > 0 ? width : containerWidth
+  }
+  if (width === 'fit-content') {
+    return -1
+  }
+  // percentage, e.g. "50%", "80%"
+  const match = width.match(/^(\d+(?:\.\d+)?)%$/)
+  if (match && match[1]) {
+    const percentage = parseFloat(match[1])
+    if (!isNaN(percentage) && percentage > 0) {
+      return (containerWidth * percentage) / 100
+    }
+  }
+
+  return containerWidth
+}
+
 function layoutBlockquote(node: BlockquoteNode, context: LayoutContext): LayoutResult<BlockquoteFragment> {
   const padding = context.theme.blocks.quote.padding
   // The line box has ~32% of lineHeight as dead space above the first visible glyph
@@ -261,6 +280,7 @@ function layoutBlockquote(node: BlockquoteNode, context: LayoutContext): LayoutR
 
 function layoutCode(node: CodeBlockNode, context: LayoutContext): LayoutResult<CodeFragment> {
   const padding = context.theme.blocks.code.padding
+  const width = context.theme.blocks.code.width
   const lineHeight = context.theme.typography.code.lineHeight
   const lineWidth = Math.max(1, context.width - padding * 2)
   const codeTheme = withBodyTypography(context.theme, context.theme.typography.code)
@@ -269,6 +289,7 @@ function layoutCode(node: CodeBlockNode, context: LayoutContext): LayoutResult<C
   const lines: LineBox[] = []
   const lineSourceMap: number[] = []
   let cursorY = context.y + padding
+  let boxWidth = 0
 
   sourceLines.forEach((sourceLine, sourceLineIndex) => {
     const hlLine = highlighted?.lines[sourceLineIndex]
@@ -281,6 +302,7 @@ function layoutCode(node: CodeBlockNode, context: LayoutContext): LayoutResult<C
 
     if (laidOut.length > 0) {
       for (const line of laidOut) {
+        if (line.width > boxWidth) boxWidth = line.width
         lines.push(offsetLineBox(line, context.x + padding, cursorY - line.y))
         lineSourceMap.push(sourceLineIndex)
         cursorY += line.height
@@ -293,10 +315,13 @@ function layoutCode(node: CodeBlockNode, context: LayoutContext): LayoutResult<C
     cursorY += lineHeight
   })
 
+  const parsedWidth = parseWidth(width, context.width)
+  const finalWidth = parsedWidth === -1 ? boxWidth + padding * 2 : parsedWidth
+
   const box = {
     x: context.x,
     y: context.y,
-    width: context.width,
+    width: finalWidth,
     height: cursorY - context.y + padding,
   }
 
